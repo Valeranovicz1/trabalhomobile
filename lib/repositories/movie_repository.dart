@@ -1,44 +1,193 @@
+// lib/repositories/movie_repository.dart
+
 import 'package:projetomobile/models/movie.dart';
 
 class MovieRepository {
-
   static List<Movie> movies = [
-    Movie (
-    movie_id:1,
-    title: 'O Poderoso Chefão',
-    imageUrl: 'https://i.ebayimg.com/images/g/R~4AAOSwoyVg3GoS/s-l1200.webp',
-    description: 'A saga de uma família mafiosa italiana em Nova York, focada na transformação de Michael Corleone, de um relutante membro da família a um impiedoso chefe da máfia.',
-    year: 1972,
-    director: 'Francis Ford Coppola',
+    Movie(
+      movie_id: 1,
+      title: 'O Poderoso Chefão',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/oJagOzBu9Rdd9BrciseCm3U3MCU.jpg',
+      description: 'A saga de uma família mafiosa italiana em Nova York...',
+      year: 1972,
+      director: 'Francis Ford Coppola',
     ),
     Movie(
-    movie_id:2,
-    title: 'A Origem',
-    imageUrl: 'https://img.elo7.com.br/product/original/2657A1E/poster-cartaz-filme-a-origem-2010-grande-g-frete-gratis-poster-de-filme.jpg',
-    description: 'Um ladrão que rouba segredos corporativos através do uso da tecnologia de compartilhamento de sonhos recebe a tarefa inversa de plantar uma ideia na mente de um CEO.',
-    year: 2010,
-    director: 'Christopher Nolan',
+      movie_id: 2,
+      title: 'A Origem',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/n3Vnq3FvBgjFqX6G5f8zjwCeQC0.jpg',
+      description: 'Um ladrão que rouba segredos corporativos...',
+      year: 2010,
+      director: 'Christopher Nolan',
     ),
     Movie(
-    movie_id:3,
-    title: 'Pulp Fiction: Tempo de Violência',
-    imageUrl: 'https://br.web.img3.acsta.net/medias/nmedia/18/89/43/82/20052332.jpg',
-    description: 'As vidas de dois assassinos de aluguel, um boxeador, a esposa de um gângster e um casal de assaltantes de lanchonetes se entrelaçam em quatro contos de violência e redenção.',
-    year: 1994,
-    director: 'Quentin Tarantino',
+      movie_id: 3,
+      title: 'Pulp Fiction: Tempo de Violência',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/tptjnB2LDbuUWya9Cx5sQtv5hqb.jpg',
+      description: 'As vidas de dois assassinos de aluguel...',
+      year: 1994,
+      director: 'Quentin Tarantino',
     ),
     Movie(
-    movie_id:4,
-    title: 'Clube da Luta',
-    imageUrl: 'https://img.elo7.com.br/product/original/2692751/poster-cartaz-clube-da-luta-fight-club-1999-filme-cinema-presente-geek-nerd-decoracao-poster.jpg',
-    description: 'Um trabalhador de escritório insone, procurando uma maneira de mudar sua vida, cruza o caminho com um fabricante de sabão e juntos formam um clube de luta clandestino que se transforma em algo muito, muito maior.',
-    year: 1999,
-    director: 'David Fincher',
-  ),
-    
+      movie_id: 4,
+      title: 'Clube da Luta',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/mCICnh7QBH0gzYaTQChBDDVIKdm.jpg',
+      description: 'Um trabalhador de escritório insone...',
+      year: 1999,
+      director: 'David Fincher',
+    ),
+    Movie(
+      movie_id: 5,
+      title: 'Matrix',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg',
+      description: 'Um hacker descobre a verdadeira natureza da realidade...',
+      year: 1999,
+      director: 'Lana & Lilly Wachowski',
+    ),
+    Movie(
+      movie_id: 6,
+      title: 'Interestelar',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg',
+      description: 'Um grupo de exploradores viaja por um buraco de minhoca...',
+      year: 2014,
+      director: 'Christopher Nolan',
+    ),
+    Movie(
+      movie_id: 7,
+      title: 'O Senhor dos Anéis: A Sociedade do Anel',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg',
+      description: 'Um jovem hobbit deve destruir um anel poderoso...',
+      year: 2001,
+      director: 'Peter Jackson',
+    ),
+    Movie(
+      movie_id: 8,
+      title: 'O Senhor dos Anéis: As Duas Torres',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/rrGlNlzFTrXFNGXsD7NNlxq4BPb.jpg',
+      description: 'A jornada da Sociedade do Anel continua...',
+      year: 2002,
+      director: 'Peter Jackson',
+    ),
+    Movie(
+      movie_id: 9,
+      title: 'O Senhor dos Anéis: O Retorno do Rei',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg',
+      description: 'A batalha final pela Terra Média...',
+      year: 2003,
+      director: 'Peter Jackson',
+    ),
+    Movie(
+      movie_id: 10,
+      title: 'Batman: O Cavaleiro das Trevas',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/qJ2tW6WMUDux911r6m7haRef0WH.jpg',
+      description: 'Batman enfrenta o caos causado pelo Coringa...',
+      year: 2008,
+      director: 'Christopher Nolan',
+    ),
+    Movie(
+      movie_id: 11,
+      title: 'Forrest Gump',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg',
+      description:
+          'A história da vida de um homem simples com um coração puro...',
+      year: 1994,
+      director: 'Robert Zemeckis',
+    ),
+    Movie(
+      movie_id: 12,
+      title: 'Gladiador',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg',
+      description:
+          'Um general romano busca vingança contra o imperador corrupto...',
+      year: 2000,
+      director: 'Ridley Scott',
+    ),
+    Movie(
+      movie_id: 13,
+      title: 'O Resgate do Soldado Ryan',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/uqx37cS8cpHg8U35f9U5IBlrCV3.jpg',
+      description:
+          'Soldados arriscam suas vidas para resgatar um companheiro...',
+      year: 1998,
+      director: 'Steven Spielberg',
+    ),
+    Movie(
+      movie_id: 14,
+      title: 'Coringa',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg',
+      description: 'A transformação de Arthur Fleck no Coringa...',
+      year: 2019,
+      director: 'Todd Phillips',
+    ),
+    Movie(
+      movie_id: 15,
+      title: 'O Silêncio dos Inocentes',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/uS9m8OBk1A8eM9I042bx8XXpqAq.jpg',
+      description: 'Uma jovem agente do FBI busca ajuda de um assassino...',
+      year: 1991,
+      director: 'Jonathan Demme',
+    ),
+    Movie(
+      movie_id: 16,
+      title: 'Os Infiltrados',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/jyAgiqVSx5fl0NNj7WoGGKweXrL.jpg',
+      description: 'Um policial infiltrado e um criminoso infiltrado...',
+      year: 2006,
+      director: 'Martin Scorsese',
+    ),
+    Movie(
+      movie_id: 17,
+      title: 'O Exterminador do Futuro 2: O Julgamento Final',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/weVXMD5QBGeQil4HEATZqAkXeEc.jpg',
+      description:
+          'Um ciborgue deve proteger um garoto destinado a salvar a humanidade...',
+      year: 1991,
+      director: 'James Cameron',
+    ),
+    Movie(
+      movie_id: 18,
+      title: 'De Volta para o Futuro',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/fNOH9f1aA7XRTzl1sAOx9iF553Q.jpg',
+      description: 'Um adolescente viaja acidentalmente para o passado...',
+      year: 1985,
+      director: 'Robert Zemeckis',
+    ),
+    Movie(
+      movie_id: 19,
+      title: 'Django Livre',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/7oWY8VDWW7thTzWh3OKYRkWUlD5.jpg',
+      description: 'Um escravo liberto busca resgatar sua esposa...',
+      year: 2012,
+      director: 'Quentin Tarantino',
+    ),
+    Movie(
+      movie_id: 20,
+      title: 'Cidade de Deus',
+      imageUrl:
+          'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/k7eYdWvhYQyRQoU2TB2A2Xu2TfD.jpg',
+      description:
+          'A ascensão do crime organizado em uma favela do Rio de Janeiro...',
+      year: 2002,
+      director: 'Fernando Meirelles, Kátia Lund',
+    ),
   ];
-
-  
-
-  
 }
