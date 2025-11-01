@@ -9,7 +9,8 @@
       "dependencies": [
         "cupertino_icons",
         "flutter",
-        "http"
+        "http",
+        "provider"
       ],
       "devDependencies": [
         "flutter_lints",
@@ -45,6 +46,15 @@
       "name": "cupertino_icons",
       "version": "1.0.8",
       "dependencies": []
+    },
+    {
+      "name": "provider",
+      "version": "6.1.5+1",
+      "dependencies": [
+        "collection",
+        "flutter",
+        "nested"
+      ]
     },
     {
       "name": "http",
@@ -155,6 +165,13 @@
         "stream_channel",
         "string_scanner",
         "term_glyph"
+      ]
+    },
+    {
+      "name": "nested",
+      "version": "1.0.0",
+      "dependencies": [
+        "flutter"
       ]
     },
     {

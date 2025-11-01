@@ -5,6 +5,7 @@ class Movie {
   final String description;
   final int year;
   final String director;
+  double averageRating;
 
   Movie({
     required this.movie_id,
@@ -13,5 +14,6 @@ class Movie {
     required this.description,
     required this.year,
     required this.director,
+    this.averageRating = 0.0,
   });
 }

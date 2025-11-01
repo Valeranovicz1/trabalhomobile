@@ -12,6 +12,7 @@ class MovieRepository {
       description: 'A saga de uma família mafiosa italiana em Nova York...',
       year: 1972,
       director: 'Francis Ford Coppola',
+      averageRating: 4.9,
     ),
     Movie(
       movie_id: 2,
@@ -21,6 +22,7 @@ class MovieRepository {
       description: 'Um ladrão que rouba segredos corporativos...',
       year: 2010,
       director: 'Christopher Nolan',
+      averageRating: 4.7,
     ),
     Movie(
       movie_id: 3,
@@ -30,6 +32,7 @@ class MovieRepository {
       description: 'As vidas de dois assassinos de aluguel...',
       year: 1994,
       director: 'Quentin Tarantino',
+      averageRating: 4.8,
     ),
     Movie(
       movie_id: 4,
@@ -39,6 +42,7 @@ class MovieRepository {
       description: 'Um trabalhador de escritório insone...',
       year: 1999,
       director: 'David Fincher',
+      averageRating: 4.6,
     ),
     Movie(
       movie_id: 5,
@@ -48,6 +52,7 @@ class MovieRepository {
       description: 'Um hacker descobre a verdadeira natureza da realidade...',
       year: 1999,
       director: 'Lana & Lilly Wachowski',
+      averageRating: 4.7,
     ),
     Movie(
       movie_id: 6,
@@ -57,6 +62,7 @@ class MovieRepository {
       description: 'Um grupo de exploradores viaja por um buraco de minhoca...',
       year: 2014,
       director: 'Christopher Nolan',
+      averageRating: 4.8,
     ),
     Movie(
       movie_id: 7,
@@ -66,6 +72,7 @@ class MovieRepository {
       description: 'Um jovem hobbit deve destruir um anel poderoso...',
       year: 2001,
       director: 'Peter Jackson',
+      averageRating: 4.9,
     ),
     Movie(
       movie_id: 8,
@@ -75,6 +82,7 @@ class MovieRepository {
       description: 'A jornada da Sociedade do Anel continua...',
       year: 2002,
       director: 'Peter Jackson',
+      averageRating: 4.8,
     ),
     Movie(
       movie_id: 9,
@@ -84,6 +92,7 @@ class MovieRepository {
       description: 'A batalha final pela Terra Média...',
       year: 2003,
       director: 'Peter Jackson',
+      averageRating: 4.9,
     ),
     Movie(
       movie_id: 10,
@@ -93,6 +102,7 @@ class MovieRepository {
       description: 'Batman enfrenta o caos causado pelo Coringa...',
       year: 2008,
       director: 'Christopher Nolan',
+      averageRating: 4.9,
     ),
     Movie(
       movie_id: 11,
@@ -103,6 +113,7 @@ class MovieRepository {
           'A história da vida de um homem simples com um coração puro...',
       year: 1994,
       director: 'Robert Zemeckis',
+      averageRating: 4.8,
     ),
     Movie(
       movie_id: 12,
@@ -113,6 +124,7 @@ class MovieRepository {
           'Um general romano busca vingança contra o imperador corrupto...',
       year: 2000,
       director: 'Ridley Scott',
+      averageRating: 4.6,
     ),
     Movie(
       movie_id: 13,
@@ -123,6 +135,7 @@ class MovieRepository {
           'Soldados arriscam suas vidas para resgatar um companheiro...',
       year: 1998,
       director: 'Steven Spielberg',
+      averageRating: 4.7,
     ),
     Movie(
       movie_id: 14,
@@ -132,6 +145,7 @@ class MovieRepository {
       description: 'A transformação de Arthur Fleck no Coringa...',
       year: 2019,
       director: 'Todd Phillips',
+      averageRating: 3.9,
     ),
     Movie(
       movie_id: 15,
@@ -141,6 +155,7 @@ class MovieRepository {
       description: 'Uma jovem agente do FBI busca ajuda de um assassino...',
       year: 1991,
       director: 'Jonathan Demme',
+      averageRating: 4.1,
     ),
     Movie(
       movie_id: 16,
@@ -150,6 +165,7 @@ class MovieRepository {
       description: 'Um policial infiltrado e um criminoso infiltrado...',
       year: 2006,
       director: 'Martin Scorsese',
+      averageRating: 4.2,
     ),
     Movie(
       movie_id: 17,
@@ -160,6 +176,7 @@ class MovieRepository {
           'Um ciborgue deve proteger um garoto destinado a salvar a humanidade...',
       year: 1991,
       director: 'James Cameron',
+      averageRating: 4.1,
     ),
     Movie(
       movie_id: 18,
@@ -169,6 +186,7 @@ class MovieRepository {
       description: 'Um adolescente viaja acidentalmente para o passado...',
       year: 1985,
       director: 'Robert Zemeckis',
+      averageRating: 4.7,
     ),
     Movie(
       movie_id: 19,
@@ -178,6 +196,7 @@ class MovieRepository {
       description: 'Um escravo liberto busca resgatar sua esposa...',
       year: 2012,
       director: 'Quentin Tarantino',
+      averageRating: 4.6,
     ),
     Movie(
       movie_id: 20,
@@ -188,6 +207,14 @@ class MovieRepository {
           'A ascensão do crime organizado em uma favela do Rio de Janeiro...',
       year: 2002,
       director: 'Fernando Meirelles, Kátia Lund',
+      averageRating: 4.8,
     ),
   ];
+
+  static void updateMovieAverageRating(int movieId, double newAverage) {
+    final index = movies.indexWhere((m) => m.movie_id == movieId);
+    if (index != -1) {
+      movies[index].averageRating = newAverage;
+    }
+  }
 }

@@ -7,7 +7,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:projetomobile/main.dart';
+import 'package:projetomobile/app.dart';
 
 void main() {
   testWidgets('Login page loads', (WidgetTester tester) async {
