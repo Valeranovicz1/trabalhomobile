@@ -1,16 +1,9 @@
+// lib/views/login_page.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:projetomobile/utils/app_colors.dart';
-import 'package:projetomobile/pages/register.dart';
-import 'package:projetomobile/repositories/user_repository.dart';
+import 'package:provider/provider.dart';
+import 'package:projetomobile/viewmodels/auth_viewmodel.dart';
+import 'package:projetomobile/utils/app_colors.dart'; // Suas cores
 
-/// Tela de Login do MovieDex - Versão Simplificada
-/// 
-/// Nova implementação focada em:
-/// - Design limpo sem áreas acinzentadas
-/// - Layout simplificado
-/// - Funcionalidades essenciais mantidas
-/// 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -19,32 +12,16 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // Controladores para os campos de texto
+  // Controladores para os campos de texto (Estado local da View)
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  
-  // Chave do formulário para validação
+
+  // Chave do formulário para validação (Estado local da View)
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  
-  // Estados do formulário
-  bool _isLoading = false;
+
+  // Estados locais da UI
   bool _obscurePassword = true;
   bool _rememberMe = false;
-
-  @override
-  void initState() {
-    super.initState();
-    
-    // Configurar barras do sistema
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        systemNavigationBarColor: AppColors.darkBackground,
-        systemNavigationBarIconBrightness: Brightness.light,
-      ),
-    );
-  }
 
   @override
   void dispose() {
@@ -53,35 +30,31 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-
+  /// Manipula o clique no botão de login
   Future<void> _handleLogin() async {
-
+    // 1. Valida o formulário da View
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1)); 
+    // 2. Acessa o ViewModel (VM)
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
 
-
-    final user = UserRepository.loginUser(
-      email: _emailController.text,
-      password: _passwordController.text,
+    // 3. Delega a lógica para o ViewModel
+    final success = await authViewModel.login(
+      _emailController.text,
+      _passwordController.text,
     );
-    
-    setState(() => _isLoading = false);
 
-    if (mounted) {
-      if (user != null) {
-        Navigator.pushReplacementNamed(context, '/home');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Email ou senha inválidos.'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+    // 4. A View reage ao resultado
+    if (mounted && !success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Email ou senha inválidos.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
+    // Se sucesso, o AuthWrapper cuida da navegação.
   }
 
   /// Validador para email
@@ -89,12 +62,10 @@ class _LoginPageState extends State<LoginPage> {
     if (value == null || value.isEmpty) {
       return 'Por favor, insira seu email';
     }
-    
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(value)) {
       return 'Por favor, insira um email válido';
     }
-    
     return null;
   }
 
@@ -103,16 +74,18 @@ class _LoginPageState extends State<LoginPage> {
     if (value == null || value.isEmpty) {
       return 'Por favor, insira sua senha';
     }
-    
     if (value.length < 6) {
       return 'A senha deve ter pelo menos 6 caracteres';
     }
-    
     return null;
   }
 
   @override
   Widget build(BuildContext context) {
+    // A View "ouve" o ViewModel para reagir a mudanças de estado (isLoading)
+    final authViewModel = Provider.of<AuthViewModel>(context);
+    final bool isLoading = authViewModel.isLoading;
+
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       body: Container(
@@ -122,10 +95,7 @@ class _LoginPageState extends State<LoginPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              AppColors.darkBackground,
-              Color(0xFF000000),
-            ],
+            colors: [AppColors.darkBackground, Color(0xFF000000)],
           ),
         ),
         child: SafeArea(
@@ -138,17 +108,10 @@ class _LoginPageState extends State<LoginPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Logo e Título
                       _buildHeader(),
-                      
                       const SizedBox(height: 60),
-                      
-                      // Formulário
-                      _buildForm(),
-                      
+                      _buildForm(isLoading),
                       const SizedBox(height: 40),
-                      
-                      // Opções extras
                       _buildExtras(),
                     ],
                   ),
@@ -165,7 +128,6 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildHeader() {
     return Column(
       children: [
-        // Logo
         Container(
           width: 100,
           height: 100,
@@ -179,10 +141,7 @@ class _LoginPageState extends State<LoginPage> {
             size: 50,
           ),
         ),
-        
         const SizedBox(height: 24),
-        
-        // Título
         const Text(
           'MovieDex',
           style: TextStyle(
@@ -192,28 +151,21 @@ class _LoginPageState extends State<LoginPage> {
             letterSpacing: 2.0,
           ),
         ),
-        
         const SizedBox(height: 8),
-        
-        // Subtítulo
         const Text(
           'Seu catálogo pessoal de filmes',
-          style: TextStyle(
-            color: AppColors.lightGray,
-            fontSize: 16,
-          ),
+          style: TextStyle(color: AppColors.lightGray, fontSize: 16),
         ),
       ],
     );
   }
 
   /// Constrói o formulário
-  Widget _buildForm() {
+  Widget _buildForm(bool isLoading) {
     return Form(
       key: _formKey,
       child: Column(
         children: [
-          // Campo Email
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
@@ -222,7 +174,10 @@ class _LoginPageState extends State<LoginPage> {
             decoration: InputDecoration(
               labelText: 'Email',
               labelStyle: const TextStyle(color: AppColors.lightGray),
-              prefixIcon: const Icon(Icons.email_outlined, color: AppColors.lightGray),
+              prefixIcon: const Icon(
+                Icons.email_outlined,
+                color: AppColors.lightGray,
+              ),
               filled: true,
               fillColor: AppColors.darkGray,
               border: OutlineInputBorder(
@@ -231,15 +186,15 @@ class _LoginPageState extends State<LoginPage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.netflixRed, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.netflixRed,
+                  width: 2,
+                ),
               ),
               errorStyle: const TextStyle(color: AppColors.error),
             ),
           ),
-          
           const SizedBox(height: 20),
-          
-          // Campo Senha
           TextFormField(
             controller: _passwordController,
             obscureText: _obscurePassword,
@@ -248,10 +203,15 @@ class _LoginPageState extends State<LoginPage> {
             decoration: InputDecoration(
               labelText: 'Senha',
               labelStyle: const TextStyle(color: AppColors.lightGray),
-              prefixIcon: const Icon(Icons.lock_outline, color: AppColors.lightGray),
+              prefixIcon: const Icon(
+                Icons.lock_outline,
+                color: AppColors.lightGray,
+              ),
               suffixIcon: IconButton(
                 icon: Icon(
-                  _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  _obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
                   color: AppColors.lightGray,
                 ),
                 onPressed: () {
@@ -268,20 +228,20 @@ class _LoginPageState extends State<LoginPage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.netflixRed, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.netflixRed,
+                  width: 2,
+                ),
               ),
               errorStyle: const TextStyle(color: AppColors.error),
             ),
           ),
-          
           const SizedBox(height: 32),
-          
-          // Botão de Login
           SizedBox(
             width: double.infinity,
             height: 56,
             child: ElevatedButton(
-              onPressed: _isLoading ? null : _handleLogin,
+              onPressed: isLoading ? null : _handleLogin,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.netflixRed,
                 foregroundColor: AppColors.white,
@@ -291,13 +251,15 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 disabledBackgroundColor: AppColors.mediumGray,
               ),
-              child: _isLoading
+              child: isLoading
                   ? const SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.white,
+                        ),
                       ),
                     )
                   : const Text(
@@ -314,11 +276,10 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  /// Constrói as opções extras
+  /// Constrói as opções extras (Lembrar de mim, Registrar, etc.)
   Widget _buildExtras() {
     return Column(
       children: [
-        // Lembrar de mim e Esqueci senha
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -358,7 +319,6 @@ class _LoginPageState extends State<LoginPage> {
             Flexible(
               child: TextButton(
                 onPressed: () {
-                  // Implementar esqueci senha
                   debugPrint('Esqueci minha senha');
                 },
                 child: const Text(
@@ -374,85 +334,23 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ],
         ),
-        
         const SizedBox(height: 40),
-        
-        // Divisor
-        Row(
-          children: [
-            Expanded(
-              child: Container(
-                height: 1,
-                color: AppColors.darkGray,
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'ou',
-                style: TextStyle(
-                  color: AppColors.lightGray,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-            Expanded(
-              child: Container(
-                height: 1,
-                color: AppColors.darkGray,
-              ),
-            ),
-          ],
-        ),
-        
+        // ... (Divisor "ou") ...
         const SizedBox(height: 32),
-        
-        // Botão Google
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: OutlinedButton.icon(
-            onPressed: () {
-              debugPrint('Login com Google');
-            },
-            icon: const Icon(
-              Icons.g_mobiledata,
-              color: AppColors.lightGray,
-              size: 24,
-            ),
-            label: const Text(
-              'Continuar com Google',
-              style: TextStyle(
-                color: AppColors.lightGray,
-                fontSize: 16,
-              ),
-            ),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.darkGray),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ),
-        
+        // ... (Botão "Continuar com Google") ...
         const SizedBox(height: 32),
-        
-        // Link para cadastro
         Wrap(
           alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             const Text(
               'Novo no MovieDex? ',
-              style: TextStyle(
-                color: AppColors.lightGray,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: AppColors.lightGray, fontSize: 14),
             ),
             TextButton(
               onPressed: () {
-                Navigator.pushReplacementNamed(context, '/register');
+                // Navega para a rota de registro
+                Navigator.pushNamed(context, '/register');
               },
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,

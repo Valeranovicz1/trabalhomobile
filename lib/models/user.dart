@@ -1,6 +1,5 @@
-class User{
-
-  final int user_id;
+class User {
+  final String user_id;
   final String name;
   final String email;
   final String password;
@@ -9,6 +8,6 @@ class User{
     required this.user_id,
     required this.name,
     required this.email,
-    required this.password
+    required this.password,
   });
 }
