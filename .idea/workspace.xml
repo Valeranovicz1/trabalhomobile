@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-<<<<<<< Updated upstream
-=======
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="NONE" />
   </component>
@@ -15,7 +13,6 @@
   <component name="ClangdSettings">
     <option name="formatViaClangd" value="false" />
   </component>
->>>>>>> Stashed changes
   <component name="FileEditorManager">
     <leaf>
       <file leaf-file-name="main.dart" pinned="false" current-in-tab="true">
@@ -29,8 +26,6 @@
       </file>
     </leaf>
   </component>
-<<<<<<< Updated upstream
-=======
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
@@ -76,7 +71,6 @@
     </task>
     <servers />
   </component>
->>>>>>> Stashed changes
   <component name="ToolWindowManager">
     <editor active="true" />
     <layout>
