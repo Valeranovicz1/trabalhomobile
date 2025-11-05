@@ -43,3 +43,37 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+# Arquivos gerados pelo Dart/Flutter
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+build/
+coverage/
+
+# Arquivos gerados por IDEs
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Arquivos de dependência do Flutter
+pubspec.lock
+
+# Arquivos locais do Android
+android/local.properties
+android/key.properties
+android/app/google-services.json
+
+# Arquivos locais do iOS
+ios/Runner/GoogleService-Info.plist
+ios/Pods/
+ios/Podfile.lock
+ios/.symlinks/
+
+# Arquivos do MacOS
+ios/Flutter/Flutter.framework
+*.swo
+*.swp
+*.DS_Store

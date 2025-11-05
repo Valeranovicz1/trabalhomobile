@@ -1,8 +1,10 @@
+// lib/viewmodels/home_viewmodel.dart
 import 'package:flutter/material.dart';
 import 'package:projetomobile/models/movie.dart';
 import 'package:projetomobile/viewmodels/movie_viewmodel.dart';
 import 'package:projetomobile/viewmodels/rating_viewmodel.dart';
 
+// O Enum já está correto com as opções de avaliação
 enum MovieSortOption { none, az, za, highestRated, lowestRated }
 
 class HomeViewModel with ChangeNotifier {
@@ -37,6 +39,8 @@ class HomeViewModel with ChangeNotifier {
     _applyFilters();
   }
 
+  // --- MÉTODOS PÚBLICOS ATUALIZADOS ---
+
   void setSearchQuery(String query) {
     if (_searchQuery != query) {
       _searchQuery = query;
@@ -44,18 +48,10 @@ class HomeViewModel with ChangeNotifier {
     }
   }
 
-  void cycleSortOption() {
-    if (_sortOption == MovieSortOption.none) {
-      _sortOption = MovieSortOption.az;
-    } else if (_sortOption == MovieSortOption.az) {
-      _sortOption = MovieSortOption.za;
-    } else if (_sortOption == MovieSortOption.za) {
-      _sortOption = MovieSortOption.highestRated;
-    } else if (_sortOption == MovieSortOption.highestRated) {
-      _sortOption = MovieSortOption.lowestRated;
-    } else {
-      _sortOption = MovieSortOption.none;
-    }
+  // ATUALIZADO: Substituímos 'cycleSortOption' por 'setSortOption'
+  // Isso permite que a View escolha a opção, em vez de só "ciclar".
+  void setSortOption(MovieSortOption option) {
+    _sortOption = option;
     _applyFilters();
   }
 
@@ -65,8 +61,11 @@ class HomeViewModel with ChangeNotifier {
     _applyFilters();
   }
 
+  // --- LÓGICA INTERNA (SEM MUDANÇAS) ---
+
   void _applyFilters() {
     List<Movie> tempMovies = List.from(_allMovies);
+
     if (_searchQuery.isNotEmpty) {
       tempMovies = tempMovies.where((movie) {
         return movie.title.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -80,39 +79,30 @@ class HomeViewModel with ChangeNotifier {
       return movie;
     }).toList();
 
-    if (_sortOption == MovieSortOption.az) {
-      tempMovies.sort((a, b) => a.title.compareTo(b.title));
-    } else if (_sortOption == MovieSortOption.za) {
-      tempMovies.sort((a, b) => b.title.compareTo(a.title));
-    } else if (_sortOption == MovieSortOption.highestRated) {
-      tempMovies.sort((a, b) => b.averageRating.compareTo(a.averageRating));
-    } else if (_sortOption == MovieSortOption.lowestRated) {
-      tempMovies.sort((a, b) => a.averageRating.compareTo(b.averageRating));
+    // Esta lógica já estava correta
+    switch (_sortOption) {
+      case MovieSortOption.az:
+        tempMovies.sort((a, b) => a.title.compareTo(b.title));
+        break;
+      case MovieSortOption.za:
+        tempMovies.sort((a, b) => b.title.compareTo(a.title));
+        break;
+      case MovieSortOption.highestRated:
+        tempMovies.sort((a, b) => b.averageRating.compareTo(a.averageRating));
+        break;
+      case MovieSortOption.lowestRated:
+        tempMovies.sort((a, b) => a.averageRating.compareTo(b.averageRating));
+        break;
+      case MovieSortOption.none:
+        break; // Mantém a ordem padrão (do Firestore/load)
     }
+
     _filteredMovies = tempMovies;
     notifyListeners();
   }
 
-  Widget buildSortIcon() {
-    IconData iconData;
-    switch (_sortOption) {
-      case MovieSortOption.az:
-        iconData = Icons.arrow_upward;
-        break;
-      case MovieSortOption.za:
-        iconData = Icons.arrow_downward;
-        break;
-      case MovieSortOption.highestRated:
-        iconData = Icons.star;
-        break;
-      case MovieSortOption.lowestRated:
-        iconData = Icons.star_border;
-        break;
-      default:
-        iconData = Icons.unfold_more;
-    }
-    return Icon(iconData, key: ValueKey<MovieSortOption>(_sortOption));
-  }
+  // REMOVIDO: O método 'buildSortIcon' não é mais necessário,
+  // pois os RadioListTiles cuidarão da UI.
 
   @override
   void dispose() {

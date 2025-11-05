@@ -1,4 +1,3 @@
-// lib/views/movie_detail_page.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -33,8 +32,11 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
 
     final userReview = _viewModel.currentUserReview;
     if (userReview != null) {
+      _isEditing = false;
       _currentRating = userReview.value;
       _commentController.text = userReview.comment ?? '';
+    } else {
+      _isEditing = true;
     }
   }
 
@@ -45,6 +47,8 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
     super.dispose();
   }
 
+  bool _isEditing = false;
+
   void _onSubmitReview() {
     _viewModel.submitReview(_currentRating, _commentController.text);
     FocusScope.of(context).unfocus();
@@ -54,13 +58,24 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
         backgroundColor: AppColors.success,
       ),
     );
+    setState(() {
+      _isEditing = false;
+    });
   }
 
-  void _onDeleteReview() {
+  void _onDeleteReview() async {
+    final confirmed = await _showConfirmationDialog(
+      'Deletar Avaliação?',
+      'Sua avaliação e comentário serão removidos.',
+    );
+
+    if (!confirmed) return;
+
     _viewModel.deleteReview();
     setState(() {
       _currentRating = 0.0;
       _commentController.clear();
+      _isEditing = true;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -68,6 +83,29 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
         backgroundColor: AppColors.error,
       ),
     );
+  }
+
+  Future<bool> _showConfirmationDialog(String title, String content) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.lightBackground,
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 
   @override
@@ -82,6 +120,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
         ),
         extendBodyBehindAppBar: true,
         body: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -107,7 +146,34 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                         fontStyle: FontStyle.italic,
                       ),
                     ),
+
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 22),
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.movie.averageRating > 0
+                              ? widget.movie.averageRating.toStringAsFixed(1)
+                              : 'N/A',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[300],
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          ' (Média da comunidade)',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+
                     const SizedBox(height: 24),
+
                     const Text(
                       'Sinopse',
                       style: TextStyle(
@@ -125,10 +191,13 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    _buildUserReviewForm(),
+
+                    _buildUserReviewSection(),
+
                     const SizedBox(height: 24),
                     const Divider(color: AppColors.darkGray),
                     const SizedBox(height: 16),
+
                     const Text(
                       'Avaliações',
                       style: TextStyle(
@@ -139,7 +208,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                     _buildReviewsList(),
 
                     SizedBox(
-                      height: MediaQuery.of(context).padding.bottom + 12,
+                      height: MediaQuery.of(context).padding.bottom + 16,
                     ),
                   ],
                 ),
@@ -157,7 +226,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
         return LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Colors.black.withValues(alpha: .6), Colors.transparent],
+          colors: [Colors.black.withValues(alpha: 0.6), Colors.transparent],
           stops: const [0.0, 0.9],
         ).createShader(Rect.fromLTRB(0, 0, rect.width, rect.height));
       },
@@ -187,7 +256,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
     );
   }
 
-  Widget _buildUserReviewForm() {
+  Widget _buildUserReviewSection() {
     return Consumer<MovieDetailViewModel>(
       builder: (context, viewModel, child) {
         if (viewModel.currentUser == null) {
@@ -196,70 +265,194 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
             style: TextStyle(color: Colors.grey),
           );
         }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Deixe sua avaliação',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+
+        if (!_isEditing && viewModel.currentUserReview != null) {
+          return _buildUserReviewSummaryCard(viewModel.currentUserReview!);
+        }
+
+        return _buildUserReviewEditor();
+      },
+    );
+  }
+
+  Widget _buildUserReviewSummaryCard(Rating review) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Sua Avaliação',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          color: AppColors.lightBackground.withValues(alpha: .5),
+          clipBehavior: Clip.antiAlias,
+          margin: const EdgeInsets.only(bottom: 12),
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _isEditing = true;
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const CircleAvatar(
+                        radius: 20,
+                        backgroundColor: AppColors.darkGray,
+                        child: Icon(Icons.person, color: AppColors.lightGray),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              review.userName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            Text(
+                              DateFormat(
+                                'dd \'de\' MMM, yyyy',
+                                'pt_BR',
+                              ).format(review.timestamp.toDate()),
+                              style: const TextStyle(
+                                color: AppColors.lightGray,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Text(
+                            review.value.toStringAsFixed(1),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.amber,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.star, color: Colors.amber, size: 20),
+                        ],
+                      ),
+                      const SizedBox(width: 16),
+                      const Icon(
+                        Icons.edit,
+                        color: AppColors.lightGray,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                  if (review.comment != null && review.comment!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12.0),
+                      child: Text(
+                        review.comment!,
+                        style: const TextStyle(fontSize: 14, height: 1.4),
+                      ),
+                    ),
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: List.generate(5, (index) {
-                final ratingValue = index + 1.0;
-                return IconButton(
-                  icon: Icon(
-                    ratingValue <= _currentRating
-                        ? Icons.star
-                        : Icons.star_border,
-                    color: ratingValue <= _currentRating
-                        ? Colors.amber
-                        : Colors.grey[400],
-                    size: 35,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUserReviewEditor() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Deixe sua avaliação',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: List.generate(5, (index) {
+            final ratingValue = index + 1.0;
+            return IconButton(
+              icon: Icon(
+                ratingValue <= _currentRating ? Icons.star : Icons.star_border,
+                color: ratingValue <= _currentRating
+                    ? Colors.amber
+                    : Colors.grey[400],
+                size: 35,
+              ),
+              onPressed: () {
+                setState(() {
+                  if (_currentRating == ratingValue) {
+                    _currentRating = 0.0;
+                  } else {
+                    _currentRating = ratingValue;
+                  }
+                });
+              },
+            );
+          }),
+        ),
+
+        if (_currentRating > 0) ...[
+          const SizedBox(height: 16),
+          TextField(
+            controller: _commentController,
+            decoration: const InputDecoration(
+              labelText: 'Adicionar um comentário (opcional)',
+              hintText: 'O que você achou do filme?',
+            ),
+            maxLines: 3,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: _onSubmitReview,
+                child: const Text('Salvar'),
+              ),
+              const SizedBox(width: 8),
+              if (_viewModel.currentUserReview != null)
+                TextButton.icon(
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    size: 18,
+                    color: AppColors.error,
+                  ),
+                  style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                  onPressed: _onDeleteReview,
+                  label: const Text('Deletar'),
+                ),
+              const Spacer(),
+              if (_viewModel.currentUserReview != null)
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.lightGray,
                   ),
                   onPressed: () {
+                    final userReview = _viewModel.currentUserReview!;
                     setState(() {
-                      if (_currentRating == ratingValue) {
-                        _currentRating = 0.0;
-                      } else {
-                        _currentRating = ratingValue;
-                      }
+                      _currentRating = userReview.value;
+                      _commentController.text = userReview.comment ?? '';
+                      _isEditing = false;
                     });
                   },
-                );
-              }),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _commentController,
-              decoration: const InputDecoration(
-                labelText: 'Adicionar um comentário (opcional)',
-                hintText: 'O que você achou do filme?',
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                ElevatedButton(
-                  onPressed: _onSubmitReview,
-                  child: const Text('Salvar Avaliação'),
+                  child: const Text('Cancelar'),
                 ),
-                const SizedBox(width: 8),
-                if (viewModel.currentUserReview != null)
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.lightGray,
-                    ),
-                    onPressed: _onDeleteReview,
-                    child: const Text('Deletar'),
-                  ),
-              ],
-            ),
-          ],
-        );
-      },
+            ],
+          ),
+        ],
+      ],
     );
   }
 
@@ -310,6 +503,10 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
   }
 
   Widget _buildReviewCard(Rating review) {
+    if (!_isEditing && review.userId == _viewModel.currentUser?.user_id) {
+      return const SizedBox.shrink();
+    }
+
     final formattedDate = DateFormat(
       'dd \'de\' MMM, yyyy',
       'pt_BR',
@@ -325,10 +522,10 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
           children: [
             Row(
               children: [
-                CircleAvatar(
+                const CircleAvatar(
                   radius: 20,
                   backgroundColor: AppColors.darkGray,
-                  child: const Icon(Icons.person, color: AppColors.lightGray),
+                  child: Icon(Icons.person, color: AppColors.lightGray),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

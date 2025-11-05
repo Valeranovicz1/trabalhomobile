@@ -2,33 +2,31 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:projetomobile/models/movie.dart';
-import 'package:projetomobile/viewmodels/home_viewmodel.dart';
 import 'package:projetomobile/viewmodels/movie_viewmodel.dart';
+import 'package:projetomobile/viewmodels/home_viewmodel.dart';
 import 'package:projetomobile/views/movie_detail_page.dart';
+import 'package:projetomobile/utils/app_colors.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // A estrutura do build (AppBar, FAB, Consumer) permanece a mesma
     return Scaffold(
       appBar: AppBar(
-        title: const Text('MovieDex'),
+        title: const Text('Filmes Disponíveis'),
         centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.account_circle, size: 30),
-            onPressed: () {
-              Navigator.pushNamed(context, '/profile');
-            },
+            onPressed: () => Navigator.pushNamed(context, '/profile'),
           ),
           const SizedBox(width: 8),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _openFilterModal(context);
-        },
+        onPressed: () => _openFilterModal(context),
         child: const Icon(Icons.filter_list),
       ),
       body: Column(
@@ -43,7 +41,6 @@ class HomePage extends StatelessWidget {
                 return Consumer<HomeViewModel>(
                   builder: (context, homeViewModel, child) {
                     final movies = homeViewModel.filteredMovies;
-
                     if (movies.isEmpty &&
                         homeViewModel.searchQuery.isNotEmpty) {
                       return const Center(
@@ -53,7 +50,6 @@ class HomePage extends StatelessWidget {
                         ),
                       );
                     }
-
                     if (movies.isEmpty && homeViewModel.searchQuery.isEmpty) {
                       return const Center(
                         child: Text(
@@ -62,7 +58,6 @@ class HomePage extends StatelessWidget {
                         ),
                       );
                     }
-
                     return ListView.builder(
                       itemCount: movies.length,
                       itemBuilder: (context, index) {
@@ -80,6 +75,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  /// Constrói o Card de um filme (Exibindo a média de estrelas)
   Widget _buildMovieCard(BuildContext context, Movie movie) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
@@ -88,12 +84,10 @@ class HomePage extends StatelessWidget {
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
         child: InkWell(
-          splashColor: Theme.of(
-            context,
-          ).colorScheme.primary.withValues(alpha: .3),
+          splashColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
           highlightColor: Theme.of(
             context,
-          ).colorScheme.primary.withValues(alpha: .1),
+          ).colorScheme.primary.withOpacity(0.1),
           onTap: () {
             Future.delayed(const Duration(milliseconds: 200), () {
               Navigator.push(
@@ -152,9 +146,10 @@ class HomePage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12.0),
+                      // Exibe a média de avaliações
                       Row(
                         children: [
-                          Icon(Icons.star, color: Colors.amber, size: 20),
+                          const Icon(Icons.star, color: Colors.amber, size: 20),
                           const SizedBox(width: 4),
                           Text(
                             movie.averageRating > 0
@@ -178,6 +173,8 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  // --- ATUALIZAÇÃO PRINCIPAL AQUI ---
+  /// Abre o Modal de Filtros (Agora com RadioListTiles)
   void _openFilterModal(BuildContext context) {
     final viewModel = Provider.of<HomeViewModel>(context, listen: false);
 
@@ -191,6 +188,8 @@ class HomePage extends StatelessWidget {
         );
         final bottomSystemPadding = MediaQuery.of(modalContext).padding.bottom;
 
+        // O StatefulBuilder ainda é necessário para atualizar
+        // os RadioButtons selecionados em tempo real.
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
             return Padding(
@@ -218,7 +217,9 @@ class HomePage extends StatelessWidget {
                     TextField(
                       controller: modalSearchController,
                       onChanged: (value) {
+                        // Chama o VM
                         viewModel.setSearchQuery(value);
+                        // Atualiza a UI do modal (para o ícone 'X')
                         setModalState(() {});
                       },
                       decoration: InputDecoration(
@@ -238,33 +239,63 @@ class HomePage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 24.0),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text(
-                        'Ordem Alfabética',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+
+                    // --- Início da Lista de Filtros ---
+                    const Text(
+                      'Ordenar por:',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
-                      trailing: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        transitionBuilder: (child, animation) {
-                          return FadeTransition(
-                            opacity: animation,
-                            child: ScaleTransition(
-                              scale: animation,
-                              child: child,
-                            ),
-                          );
-                        },
-                        child: viewModel.buildSortIcon(),
-                      ),
-                      onTap: () {
-                        viewModel.cycleSortOption();
+                    ),
+
+                    RadioListTile<MovieSortOption>(
+                      title: const Text('Padrão'),
+                      value: MovieSortOption.none,
+                      groupValue: viewModel.sortOption,
+                      onChanged: (value) {
+                        viewModel.setSortOption(value!);
+                        setModalState(() {}); // Atualiza o modal
+                      },
+                    ),
+                    RadioListTile<MovieSortOption>(
+                      title: const Text('Ordem Alfabética (A-Z)'),
+                      value: MovieSortOption.az,
+                      groupValue: viewModel.sortOption,
+                      onChanged: (value) {
+                        viewModel.setSortOption(value!);
                         setModalState(() {});
                       },
                     ),
+                    RadioListTile<MovieSortOption>(
+                      title: const Text('Ordem Alfabética (Z-A)'),
+                      value: MovieSortOption.za,
+                      groupValue: viewModel.sortOption,
+                      onChanged: (value) {
+                        viewModel.setSortOption(value!);
+                        setModalState(() {});
+                      },
+                    ),
+                    RadioListTile<MovieSortOption>(
+                      title: const Text('Melhor Avaliados'),
+                      value: MovieSortOption.highestRated,
+                      groupValue: viewModel.sortOption,
+                      onChanged: (value) {
+                        viewModel.setSortOption(value!);
+                        setModalState(() {});
+                      },
+                    ),
+                    RadioListTile<MovieSortOption>(
+                      title: const Text('Pior Avaliados'),
+                      value: MovieSortOption.lowestRated,
+                      groupValue: viewModel.sortOption,
+                      onChanged: (value) {
+                        viewModel.setSortOption(value!);
+                        setModalState(() {});
+                      },
+                    ),
+
+                    // --- Fim da Lista de Filtros ---
                     const SizedBox(height: 16.0),
                     SizedBox(
                       width: double.infinity,

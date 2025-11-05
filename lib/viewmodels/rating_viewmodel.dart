@@ -11,6 +11,8 @@ class RatingViewModel with ChangeNotifier {
   bool _isLoading = true;
 
   bool get isLoading => _isLoading;
+  bool _isRefreshingReviews = false;
+  bool get isRefreshingReviews => _isRefreshingReviews;
 
   RatingViewModel() {
     _initRatingsCache();
@@ -36,6 +38,35 @@ class RatingViewModel with ChangeNotifier {
       _recalculateAllAverages();
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshReviewsForMovie(int movieId) async {
+    _isRefreshingReviews = true;
+    notifyListeners();
+
+    try {
+      final snapshot = await _db
+          .collection('ratings')
+          .where('movieId', isEqualTo: movieId)
+          .orderBy('timestamp', descending: true)
+          .get();
+      _movieReviewsCache[movieId] = [];
+
+      for (var doc in snapshot.docs) {
+        final rating = Rating.fromFirestore(doc.data());
+        _movieReviewsCache[movieId]!.add(rating);
+
+        if (!_userRatingsCache.containsKey(rating.userId)) {
+          _userRatingsCache[rating.userId] = {};
+        }
+        _userRatingsCache[rating.userId]![rating.movieId] = rating;
+      }
+
+      _recalculateAverage(movieId);
+    } finally {
+      _isRefreshingReviews = false;
       notifyListeners();
     }
   }
