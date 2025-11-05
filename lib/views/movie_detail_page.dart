@@ -155,7 +155,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                         Text(
                           widget.movie.averageRating > 0
                               ? widget.movie.averageRating.toStringAsFixed(1)
-                              : 'N/A',
+                              : 'Sem avaliações',
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.grey[300],

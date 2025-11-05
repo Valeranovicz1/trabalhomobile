@@ -4,7 +4,6 @@ import 'package:projetomobile/models/movie.dart';
 import 'package:projetomobile/viewmodels/movie_viewmodel.dart';
 import 'package:projetomobile/viewmodels/rating_viewmodel.dart';
 
-// O Enum já está correto com as opções de avaliação
 enum MovieSortOption { none, az, za, highestRated, lowestRated }
 
 class HomeViewModel with ChangeNotifier {
@@ -39,8 +38,6 @@ class HomeViewModel with ChangeNotifier {
     _applyFilters();
   }
 
-  // --- MÉTODOS PÚBLICOS ATUALIZADOS ---
-
   void setSearchQuery(String query) {
     if (_searchQuery != query) {
       _searchQuery = query;
@@ -48,8 +45,6 @@ class HomeViewModel with ChangeNotifier {
     }
   }
 
-  // ATUALIZADO: Substituímos 'cycleSortOption' por 'setSortOption'
-  // Isso permite que a View escolha a opção, em vez de só "ciclar".
   void setSortOption(MovieSortOption option) {
     _sortOption = option;
     _applyFilters();
@@ -60,8 +55,6 @@ class HomeViewModel with ChangeNotifier {
     _sortOption = MovieSortOption.none;
     _applyFilters();
   }
-
-  // --- LÓGICA INTERNA (SEM MUDANÇAS) ---
 
   void _applyFilters() {
     List<Movie> tempMovies = List.from(_allMovies);
@@ -79,7 +72,6 @@ class HomeViewModel with ChangeNotifier {
       return movie;
     }).toList();
 
-    // Esta lógica já estava correta
     switch (_sortOption) {
       case MovieSortOption.az:
         tempMovies.sort((a, b) => a.title.compareTo(b.title));
@@ -94,15 +86,12 @@ class HomeViewModel with ChangeNotifier {
         tempMovies.sort((a, b) => a.averageRating.compareTo(b.averageRating));
         break;
       case MovieSortOption.none:
-        break; // Mantém a ordem padrão (do Firestore/load)
+        break;
     }
 
     _filteredMovies = tempMovies;
     notifyListeners();
   }
-
-  // REMOVIDO: O método 'buildSortIcon' não é mais necessário,
-  // pois os RadioListTiles cuidarão da UI.
 
   @override
   void dispose() {

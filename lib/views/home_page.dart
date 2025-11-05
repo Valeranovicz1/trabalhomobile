@@ -5,14 +5,12 @@ import 'package:projetomobile/models/movie.dart';
 import 'package:projetomobile/viewmodels/movie_viewmodel.dart';
 import 'package:projetomobile/viewmodels/home_viewmodel.dart';
 import 'package:projetomobile/views/movie_detail_page.dart';
-import 'package:projetomobile/utils/app_colors.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // A estrutura do build (AppBar, FAB, Consumer) permanece a mesma
     return Scaffold(
       appBar: AppBar(
         title: const Text('Filmes Disponíveis'),
@@ -75,7 +73,6 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  /// Constrói o Card de um filme (Exibindo a média de estrelas)
   Widget _buildMovieCard(BuildContext context, Movie movie) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
@@ -84,10 +81,12 @@ class HomePage extends StatelessWidget {
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
         child: InkWell(
-          splashColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+          splashColor: Theme.of(
+            context,
+          ).colorScheme.primary.withValues(alpha: .3),
           highlightColor: Theme.of(
             context,
-          ).colorScheme.primary.withOpacity(0.1),
+          ).colorScheme.primary.withValues(alpha: .1),
           onTap: () {
             Future.delayed(const Duration(milliseconds: 200), () {
               Navigator.push(
@@ -146,7 +145,6 @@ class HomePage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12.0),
-                      // Exibe a média de avaliações
                       Row(
                         children: [
                           const Icon(Icons.star, color: Colors.amber, size: 20),
@@ -173,8 +171,6 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // --- ATUALIZAÇÃO PRINCIPAL AQUI ---
-  /// Abre o Modal de Filtros (Agora com RadioListTiles)
   void _openFilterModal(BuildContext context) {
     final viewModel = Provider.of<HomeViewModel>(context, listen: false);
 
@@ -188,8 +184,6 @@ class HomePage extends StatelessWidget {
         );
         final bottomSystemPadding = MediaQuery.of(modalContext).padding.bottom;
 
-        // O StatefulBuilder ainda é necessário para atualizar
-        // os RadioButtons selecionados em tempo real.
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
             return Padding(
@@ -217,9 +211,7 @@ class HomePage extends StatelessWidget {
                     TextField(
                       controller: modalSearchController,
                       onChanged: (value) {
-                        // Chama o VM
                         viewModel.setSearchQuery(value);
-                        // Atualiza a UI do modal (para o ícone 'X')
                         setModalState(() {});
                       },
                       decoration: InputDecoration(
@@ -240,7 +232,6 @@ class HomePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 24.0),
 
-                    // --- Início da Lista de Filtros ---
                     const Text(
                       'Ordenar por:',
                       style: TextStyle(
@@ -255,7 +246,7 @@ class HomePage extends StatelessWidget {
                       groupValue: viewModel.sortOption,
                       onChanged: (value) {
                         viewModel.setSortOption(value!);
-                        setModalState(() {}); // Atualiza o modal
+                        setModalState(() {});
                       },
                     ),
                     RadioListTile<MovieSortOption>(
@@ -295,7 +286,6 @@ class HomePage extends StatelessWidget {
                       },
                     ),
 
-                    // --- Fim da Lista de Filtros ---
                     const SizedBox(height: 16.0),
                     SizedBox(
                       width: double.infinity,

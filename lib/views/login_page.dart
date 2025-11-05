@@ -12,14 +12,11 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // Controladores para os campos de texto (Estado local da View)
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // Chave do formulário para validação (Estado local da View)
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  // Estados locais da UI
   bool _obscurePassword = true;
   bool _rememberMe = false;
 
@@ -30,21 +27,16 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  /// Manipula o clique no botão de login
   Future<void> _handleLogin() async {
-    // 1. Valida o formulário da View
     if (!_formKey.currentState!.validate()) return;
 
-    // 2. Acessa o ViewModel (VM)
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
 
-    // 3. Delega a lógica para o ViewModel
     final success = await authViewModel.login(
       _emailController.text,
       _passwordController.text,
     );
 
-    // 4. A View reage ao resultado
     if (mounted && !success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -54,10 +46,8 @@ class _LoginPageState extends State<LoginPage> {
         ),
       );
     }
-    // Se sucesso, o AuthWrapper cuida da navegação.
   }
 
-  /// Validador para email
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) {
       return 'Por favor, insira seu email';
@@ -69,7 +59,6 @@ class _LoginPageState extends State<LoginPage> {
     return null;
   }
 
-  /// Validador para senha
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Por favor, insira sua senha';
@@ -82,7 +71,6 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    // A View "ouve" o ViewModel para reagir a mudanças de estado (isLoading)
     final authViewModel = Provider.of<AuthViewModel>(context);
     final bool isLoading = authViewModel.isLoading;
 
@@ -124,7 +112,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  /// Constrói o cabeçalho
   Widget _buildHeader() {
     return Column(
       children: [
@@ -160,7 +147,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  /// Constrói o formulário
   Widget _buildForm(bool isLoading) {
     return Form(
       key: _formKey,
@@ -276,7 +262,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  /// Constrói as opções extras (Lembrar de mim, Registrar, etc.)
   Widget _buildExtras() {
     return Column(
       children: [
@@ -335,9 +320,7 @@ class _LoginPageState extends State<LoginPage> {
           ],
         ),
         const SizedBox(height: 40),
-        // ... (Divisor "ou") ...
         const SizedBox(height: 32),
-        // ... (Botão "Continuar com Google") ...
         const SizedBox(height: 32),
         Wrap(
           alignment: WrapAlignment.center,
@@ -349,7 +332,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
             TextButton(
               onPressed: () {
-                // Navega para a rota de registro
                 Navigator.pushNamed(context, '/register');
               },
               style: TextButton.styleFrom(
