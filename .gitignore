@@ -64,7 +64,7 @@ pubspec.lock
 # Arquivos locais do Android
 android/local.properties
 android/key.properties
-android/app/google-services.json
+# android/app/google-services.json
 
 # Arquivos locais do iOS
 ios/Runner/GoogleService-Info.plist
