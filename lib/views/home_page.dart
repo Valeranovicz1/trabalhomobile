@@ -1,16 +1,19 @@
-// lib/views/home_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:projetomobile/models/movie.dart';
 import 'package:projetomobile/viewmodels/movie_viewmodel.dart';
 import 'package:projetomobile/viewmodels/home_viewmodel.dart';
 import 'package:projetomobile/views/movie_detail_page.dart';
+import 'package:projetomobile/utils/app_colors.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Pegamos o VM aqui para usar no onRefresh
+    final movieViewModel = Provider.of<MovieViewModel>(context, listen: false);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Filmes Disponíveis'),
@@ -27,49 +30,73 @@ class HomePage extends StatelessWidget {
         onPressed: () => _openFilterModal(context),
         child: const Icon(Icons.filter_list),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Consumer<MovieViewModel>(
-              builder: (context, movieViewModel, child) {
-                if (movieViewModel.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
+      // Envolvemos o corpo inteiro com RefreshIndicator
+      body: RefreshIndicator(
+        color: AppColors.netflixRed,
+        onRefresh: () async {
+          // O await aqui garante que o indicador só suma quando terminar
+          await movieViewModel.loadMovies();
+        },
+        child: Consumer<MovieViewModel>(
+          builder: (context, movieViewModel, child) {
+            if (movieViewModel.isLoading) {
+              // Não dá para puxar enquanto carrega, e tudo bem
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            return Consumer<HomeViewModel>(
+              builder: (context, homeViewModel, child) {
+                final movies = homeViewModel.filteredMovies;
+
+                // Caso 1: Busca sem resultados
+                if (movies.isEmpty && homeViewModel.searchQuery.isNotEmpty) {
+                  return _buildScrollableEmptyState(
+                    'Nenhum filme encontrado para esta busca.',
+                  );
                 }
 
-                return Consumer<HomeViewModel>(
-                  builder: (context, homeViewModel, child) {
-                    final movies = homeViewModel.filteredMovies;
-                    if (movies.isEmpty &&
-                        homeViewModel.searchQuery.isNotEmpty) {
-                      return const Center(
-                        child: Text(
-                          'Nenhum filme encontrado.',
-                          style: TextStyle(fontSize: 18, color: Colors.grey),
-                        ),
-                      );
-                    }
-                    if (movies.isEmpty && homeViewModel.searchQuery.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          'Nenhum filme disponível no momento.',
-                          style: TextStyle(fontSize: 18, color: Colors.grey),
-                        ),
-                      );
-                    }
-                    return ListView.builder(
-                      itemCount: movies.length,
-                      itemBuilder: (context, index) {
-                        final movie = movies[index];
-                        return _buildMovieCard(context, movie);
-                      },
-                    );
+                // Caso 2: Lista realmente vazia (banco vazio ou erro)
+                if (movies.isEmpty) {
+                  return _buildScrollableEmptyState(
+                    'Nenhum filme disponível no momento.',
+                  );
+                }
+
+                // Caso 3: Lista com filmes
+                return ListView.builder(
+                  // ESTA LINHA É ESSENCIAL PARA O REFRESH FUNCIONAR
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: movies.length,
+                  itemBuilder: (context, index) {
+                    final movie = movies[index];
+                    return _buildMovieCard(context, movie);
                   },
                 );
               },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Widget auxiliar para criar telas vazias que permitem "pull-to-refresh"
+  Widget _buildScrollableEmptyState(String message) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Container(
+            height: constraints.maxHeight,
+            alignment: Alignment.center,
+            child: Text(
+              message,
+              style: const TextStyle(fontSize: 18, color: Colors.grey),
+              textAlign: TextAlign.center,
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -81,12 +108,10 @@ class HomePage extends StatelessWidget {
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
         child: InkWell(
-          splashColor: Theme.of(
-            context,
-          ).colorScheme.primary.withValues(alpha: .3),
+          splashColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
           highlightColor: Theme.of(
             context,
-          ).colorScheme.primary.withValues(alpha: .1),
+          ).colorScheme.primary.withOpacity(0.1),
           onTap: () {
             Future.delayed(const Duration(milliseconds: 200), () {
               Navigator.push(

@@ -20,6 +20,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
   late MovieDetailViewModel _viewModel;
   final TextEditingController _commentController = TextEditingController();
   double _currentRating = 0.0;
+  bool _isEditing = false;
 
   @override
   void initState() {
@@ -46,8 +47,6 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
     _viewModel.dispose();
     super.dispose();
   }
-
-  bool _isEditing = false;
 
   void _onSubmitReview() {
     _viewModel.submitReview(_currentRating, _commentController.text);
@@ -119,101 +118,109 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
           elevation: 0,
         ),
         extendBodyBehindAppBar: true,
-        body: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeaderImage(context),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.movie.title,
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${widget.movie.year} • Dirigido por ${widget.movie.director}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[400],
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        const Icon(Icons.star, color: Colors.amber, size: 22),
-                        const SizedBox(width: 8),
-                        Text(
-                          widget.movie.averageRating > 0
-                              ? widget.movie.averageRating.toStringAsFixed(1)
-                              : 'Sem avaliações',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[300],
-                            fontWeight: FontWeight.bold,
-                          ),
+        // ADICIONADO: RefreshIndicator
+        body: RefreshIndicator(
+          color: AppColors.netflixRed,
+          onRefresh: () async {
+            // Chama o método de refresh específico para esta tela
+            await Provider.of<RatingViewModel>(
+              context,
+              listen: false,
+            ).refreshReviewsForMovie(widget.movie.movie_id);
+          },
+          child: SingleChildScrollView(
+            // ESSENCIAL: Permite rolar mesmo se o conteúdo for pequeno
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeaderImage(context),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.movie.title,
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
                         ),
-                        Text(
-                          ' (Média da comunidade)',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[500],
-                          ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${widget.movie.year} • Dirigido por ${widget.movie.director}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[400],
+                          fontStyle: FontStyle.italic,
                         ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    const Text(
-                      'Sinopse',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.movie.description,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[300],
-                        height: 1.5,
+                      const SizedBox(height: 16),
+                      // Média da comunidade
+                      Row(
+                        children: [
+                          const Icon(Icons.star, color: Colors.amber, size: 22),
+                          const SizedBox(width: 8),
+                          Text(
+                            widget.movie.averageRating > 0
+                                ? widget.movie.averageRating.toStringAsFixed(1)
+                                : 'Sem avaliações',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[300],
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            ' (Média da comunidade)',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    _buildUserReviewSection(),
-
-                    const SizedBox(height: 24),
-                    const Divider(color: AppColors.darkGray),
-                    const SizedBox(height: 16),
-
-                    const Text(
-                      'Avaliações',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Sinopse',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    _buildReviewsList(),
-
-                    SizedBox(
-                      height: MediaQuery.of(context).padding.bottom + 16,
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.movie.description,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[300],
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildUserReviewSection(),
+                      const SizedBox(height: 24),
+                      const Divider(color: AppColors.darkGray),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Avaliações',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildReviewsList(),
+                      // Espaço extra no final para não cortar o último item
+                      SizedBox(
+                        height: MediaQuery.of(context).padding.bottom + 16,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -467,16 +474,14 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
           movieDetailViewModel.movie.movie_id,
         );
 
-        final isLoading = ratingViewModel.isLoading;
-
-        if (isLoading && reviews.isEmpty) {
+        if (ratingViewModel.isLoading && reviews.isEmpty) {
           return const Padding(
             padding: EdgeInsets.all(16.0),
             child: Center(child: CircularProgressIndicator()),
           );
         }
 
-        if (!isLoading && reviews.isEmpty) {
+        if (reviews.isEmpty) {
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(16.0),
