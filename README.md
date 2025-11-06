@@ -13,9 +13,6 @@ O **MovieDex** é um aplicativo mobile desenvolvido como projeto de programaçã
 - 📱 **Interface responsiva** e moderna
 - ✅ **Validações de formulário** em tempo real
 - 🌙 **Tema escuro** por padrão
-
-### 🎯 Funcionalidades Futuras
-
 - 📋 Lista de filmes
 - 🎬 Detalhes dos filmes
 - ➕ Cadastro de novos filmes
@@ -73,21 +70,36 @@ flutter test
 
 ```
 lib/
-├── main.dart                 # Configuração principal do app
-├── pages/
-│   ├── login.dart           # Tela de login
-│   ├── home_page.dart       # Tela principal (em desenvolvimento)
-│   ├── movie_page.dart      # Tela de detalhes do filme
-│   ├── register.dart        # Tela de cadastro
-│   └── user_page.dart       # Tela do usuário
-├── models/
-│   ├── movie.dart           # Modelo de dados do filme
-│   └── user.dart            # Modelo de dados do usuário
-├── repositories/
-│   └── movie_repository.dart # Repositório de filmes
-└── utils/
-    ├── app_colors.dart      # Sistema de cores
-    └── app_constants.dart   # Constantes do app
+├── main.dart             # Ponto de entrada, inicializa o app e o Firebase
+├── app.dart              # Widget raiz do app (provavelmente o MaterialApp)
+├── firebase_options.dart # Configurações específicas do Firebase (gerado)
+│
+├── models/        
+│   ├── movie.dart          # Modelo de dados do Filme
+│   ├── rating.dart         # Modelo de dados da Avaliação (feita por um usuário)
+│   └── user.dart           # Modelo de dados do Usuário
+│
+├── repositories/        
+│   └── movie_repository.dart # Repositório para buscar dados de filmes
+│
+├── utils/                
+│    ├── app_colors.dart      # Sistema de cores
+|    └── app_constants.dart   # Constantes do app refaça
+|
+├── viewmodels/           
+│   ├── auth_viewmodel.dart         # Gerencia estado de autenticação (login, registro)
+│   ├── home_viewmodel.dart         # Gerencia estado da tela principal (home)
+│   ├── movie_detail_viewmodel.dart # Gerencia estado da tela de detalhes do filme
+│   ├── movie_viewmodel.dart        # Lógica de estado geral relacionada a filmes
+│   └── rating_viewmodel.dart       # Gerencia estado para criar/ver avaliações
+│
+└── views/             
+    ├── auth_wrapper.dart       # Decide se mostra Login ou Home (verifica se está logado)
+    ├── home_page.dart          # Tela principal (Catálogo de filmes)
+    ├── login_page.dart         # Tela de login
+    ├── movie_detail_page.dart  # Tela de detalhes de um filme específico
+    ├── register_page.dart      # Tela de cadastro de novo usuário
+    └── user_page.dart          # Tela de perfil do usuário
 ```
 
 ## 👥 Equipe de Desenvolvimento
@@ -95,14 +107,15 @@ lib/
 Este projeto está sendo desenvolvido em equipe, onde cada membro é responsável por uma parte específica:
 
 - **Tela de Login** - ✅ Concluída
-- **Tela Principal** - 🚧 Em desenvolvimento
-- **Tela de Detalhes** - 🚧 Em desenvolvimento
-- **Sistema de Busca** - 📋 Planejado
+- **Tela Principal** - ✅ Concluída
+- **Tela de Detalhes** - ✅ Concluída
+- **Sistema de Busca** - ✅ Concluída
 
 ## 🛠️ Tecnologias Utilizadas
 
 - **Flutter** 3.9.2
 - **Dart** ^3.9.2
+- **Firebase**
 - **Arquitetura MVVM**
 - **Provider** (planejado para gerenciamento de estado)
 
