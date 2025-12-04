@@ -3,68 +3,135 @@ import 'package:provider/provider.dart';
 import 'package:projetomobile/models/movie.dart';
 import 'package:projetomobile/viewmodels/movie_viewmodel.dart';
 import 'package:projetomobile/viewmodels/home_viewmodel.dart';
+import 'package:projetomobile/viewmodels/rating_viewmodel.dart';
 import 'package:projetomobile/views/movie_detail_page.dart';
 import 'package:projetomobile/utils/app_colors.dart';
+import 'package:projetomobile/services/api_service.dart';
+import 'package:projetomobile/widgets/user_avatar.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Pegamos o VM aqui para usar no onRefresh
-    final movieViewModel = Provider.of<MovieViewModel>(context, listen: false);
+  State<HomePage> createState() => _HomePageState();
+}
 
+class _HomePageState extends State<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
+  }
+
+  Future<void> _loadData() async {
+    final movieViewModel = Provider.of<MovieViewModel>(context, listen: false);
+    final ratingViewModel = Provider.of<RatingViewModel>(
+      context,
+      listen: false,
+    );
+
+    await movieViewModel.loadMovies();
+
+    if (movieViewModel.movies.isNotEmpty) {
+      await ratingViewModel.fetchRatingsForMovieList(movieViewModel.movies);
+    }
+  }
+
+  String getFullImageUrl(String path) {
+    if (path.startsWith('http')) return path;
+    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    return '${ApiService.baseUrl}/$cleanPath';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Filmes Disponíveis'),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.account_circle, size: 30),
-            onPressed: () => Navigator.pushNamed(context, '/profile'),
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: UserAvatar(
+              radius: 18,
+              onTap: () => Navigator.pushNamed(context, '/profile'),
+            ),
           ),
-          const SizedBox(width: 8),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openFilterModal(context),
         child: const Icon(Icons.filter_list),
       ),
-      // Envolvemos o corpo inteiro com RefreshIndicator
       body: RefreshIndicator(
         color: AppColors.netflixRed,
-        onRefresh: () async {
-          // O await aqui garante que o indicador só suma quando terminar
-          await movieViewModel.loadMovies();
-        },
+        onRefresh: _loadData,
         child: Consumer<MovieViewModel>(
           builder: (context, movieViewModel, child) {
             if (movieViewModel.isLoading) {
-              // Não dá para puxar enquanto carrega, e tudo bem
               return const Center(child: CircularProgressIndicator());
+            }
+
+            if (movieViewModel.errorMessage != null) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 60,
+                        color: AppColors.error,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Ocorreu um problema',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        movieViewModel.errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: _loadData,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Tentar Novamente'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.netflixRed,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
             }
 
             return Consumer<HomeViewModel>(
               builder: (context, homeViewModel, child) {
                 final movies = homeViewModel.filteredMovies;
 
-                // Caso 1: Busca sem resultados
                 if (movies.isEmpty && homeViewModel.searchQuery.isNotEmpty) {
                   return _buildScrollableEmptyState(
                     'Nenhum filme encontrado para esta busca.',
                   );
                 }
 
-                // Caso 2: Lista realmente vazia (banco vazio ou erro)
                 if (movies.isEmpty) {
                   return _buildScrollableEmptyState(
                     'Nenhum filme disponível no momento.',
                   );
                 }
 
-                // Caso 3: Lista com filmes
                 return ListView.builder(
-                  // ESTA LINHA É ESSENCIAL PARA O REFRESH FUNCIONAR
                   physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: movies.length,
                   itemBuilder: (context, index) {
@@ -80,7 +147,6 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  /// Widget auxiliar para criar telas vazias que permitem "pull-to-refresh"
   Widget _buildScrollableEmptyState(String message) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -108,10 +174,12 @@ class HomePage extends StatelessWidget {
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
         child: InkWell(
-          splashColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+          splashColor: Theme.of(
+            context,
+          ).colorScheme.primary.withValues(alpha: 0.3),
           highlightColor: Theme.of(
             context,
-          ).colorScheme.primary.withOpacity(0.1),
+          ).colorScheme.primary.withValues(alpha: 0.1),
           onTap: () {
             Future.delayed(const Duration(milliseconds: 200), () {
               Navigator.push(

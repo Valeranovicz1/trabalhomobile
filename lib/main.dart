@@ -3,9 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:projetomobile/utils/app_colors.dart';
 import 'package:projetomobile/app.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:projetomobile/firebase_options.dart';
 import 'package:intl/date_symbol_data_local.dart';
+// import 'package:projetomobile/services/api_service.dart'; // Não precisa mais chamar aqui
 
 import 'package:projetomobile/viewmodels/auth_viewmodel.dart';
 import 'package:projetomobile/viewmodels/movie_viewmodel.dart';
@@ -14,8 +13,6 @@ import 'package:projetomobile/viewmodels/home_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   await initializeDateFormatting('pt_BR', null);
 

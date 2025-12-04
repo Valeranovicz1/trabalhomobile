@@ -5,7 +5,7 @@ import 'package:projetomobile/models/movie.dart';
 class MovieRepository {
   static List<Movie> movies = [
     Movie(
-      movie_id: 1,
+      id: 1,
       title: 'O Poderoso Chefão',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/oJagOzBu9Rdd9BrciseCm3U3MCU.jpg',
@@ -14,7 +14,7 @@ class MovieRepository {
       director: 'Francis Ford Coppola',
     ),
     Movie(
-      movie_id: 2,
+      id: 2,
       title: 'A Origem',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/n3Vnq3FvBgjFqX6G5f8zjwCeQC0.jpg',
@@ -23,7 +23,7 @@ class MovieRepository {
       director: 'Christopher Nolan',
     ),
     Movie(
-      movie_id: 3,
+      id: 3,
       title: 'Pulp Fiction: Tempo de Violência',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/tptjnB2LDbuUWya9Cx5sQtv5hqb.jpg',
@@ -32,7 +32,7 @@ class MovieRepository {
       director: 'Quentin Tarantino',
     ),
     Movie(
-      movie_id: 4,
+      id: 4,
       title: 'Clube da Luta',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/mCICnh7QBH0gzYaTQChBDDVIKdm.jpg',
@@ -41,7 +41,7 @@ class MovieRepository {
       director: 'David Fincher',
     ),
     Movie(
-      movie_id: 5,
+      id: 5,
       title: 'Matrix',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg',
@@ -50,7 +50,7 @@ class MovieRepository {
       director: 'Lana & Lilly Wachowski',
     ),
     Movie(
-      movie_id: 6,
+      id: 6,
       title: 'Interestelar',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg',
@@ -59,7 +59,7 @@ class MovieRepository {
       director: 'Christopher Nolan',
     ),
     Movie(
-      movie_id: 7,
+      id: 7,
       title: 'O Senhor dos Anéis: A Sociedade do Anel',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg',
@@ -68,7 +68,7 @@ class MovieRepository {
       director: 'Peter Jackson',
     ),
     Movie(
-      movie_id: 8,
+      id: 8,
       title: 'O Senhor dos Anéis: As Duas Torres',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/rrGlNlzFTrXFNGXsD7NNlxq4BPb.jpg',
@@ -77,7 +77,7 @@ class MovieRepository {
       director: 'Peter Jackson',
     ),
     Movie(
-      movie_id: 9,
+      id: 9,
       title: 'O Senhor dos Anéis: O Retorno do Rei',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg',
@@ -86,7 +86,7 @@ class MovieRepository {
       director: 'Peter Jackson',
     ),
     Movie(
-      movie_id: 10,
+      id: 10,
       title: 'Batman: O Cavaleiro das Trevas',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/qJ2tW6WMUDux911r6m7haRef0WH.jpg',
@@ -95,7 +95,7 @@ class MovieRepository {
       director: 'Christopher Nolan',
     ),
     Movie(
-      movie_id: 11,
+      id: 11,
       title: 'Forrest Gump',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg',
@@ -105,7 +105,7 @@ class MovieRepository {
       director: 'Robert Zemeckis',
     ),
     Movie(
-      movie_id: 12,
+      id: 12,
       title: 'Gladiador',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg',
@@ -115,7 +115,7 @@ class MovieRepository {
       director: 'Ridley Scott',
     ),
     Movie(
-      movie_id: 13,
+      id: 13,
       title: 'O Resgate do Soldado Ryan',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/uqx37cS8cpHg8U35f9U5IBlrCV3.jpg',
@@ -125,7 +125,7 @@ class MovieRepository {
       director: 'Steven Spielberg',
     ),
     Movie(
-      movie_id: 14,
+      id: 14,
       title: 'Coringa',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg',
@@ -134,7 +134,7 @@ class MovieRepository {
       director: 'Todd Phillips',
     ),
     Movie(
-      movie_id: 15,
+      id: 15,
       title: 'O Silêncio dos Inocentes',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/uS9m8OBk1A8eM9I042bx8XXpqAq.jpg',
@@ -143,7 +143,7 @@ class MovieRepository {
       director: 'Jonathan Demme',
     ),
     Movie(
-      movie_id: 16,
+      id: 16,
       title: 'Os Infiltrados',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/jyAgiqVSx5fl0NNj7WoGGKweXrL.jpg',
@@ -152,7 +152,7 @@ class MovieRepository {
       director: 'Martin Scorsese',
     ),
     Movie(
-      movie_id: 17,
+      id: 17,
       title: 'O Exterminador do Futuro 2: O Julgamento Final',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/weVXMD5QBGeQil4HEATZqAkXeEc.jpg',
@@ -162,7 +162,7 @@ class MovieRepository {
       director: 'James Cameron',
     ),
     Movie(
-      movie_id: 18,
+      id: 18,
       title: 'De Volta para o Futuro',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/fNOH9f1aA7XRTzl1sAOx9iF553Q.jpg',
@@ -171,7 +171,7 @@ class MovieRepository {
       director: 'Robert Zemeckis',
     ),
     Movie(
-      movie_id: 19,
+      id: 19,
       title: 'Django Livre',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/7oWY8VDWW7thTzWh3OKYRkWUlD5.jpg',
@@ -180,7 +180,7 @@ class MovieRepository {
       director: 'Quentin Tarantino',
     ),
     Movie(
-      movie_id: 20,
+      id: 20,
       title: 'Cidade de Deus',
       imageUrl:
           'https://media.themoviedb.org/t/p/w300_and_h450_bestv2/k7eYdWvhYQyRQoU2TB2A2Xu2TfD.jpg',

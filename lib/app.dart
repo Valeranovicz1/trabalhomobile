@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:projetomobile/utils/app_colors.dart';
 
-import 'package:projetomobile/views/auth_wrapper.dart';
 import 'package:projetomobile/views/login_page.dart';
 import 'package:projetomobile/views/register_page.dart';
 import 'package:projetomobile/views/home_page.dart';
 import 'package:projetomobile/views/user_page.dart';
+import 'package:projetomobile/views/splash_screen.dart';
 
 class MovieDexApp extends StatelessWidget {
   const MovieDexApp({super.key});
@@ -81,9 +81,8 @@ class MovieDexApp extends StatelessWidget {
           ),
         ),
       ),
-      initialRoute: '/',
+      home: const SplashScreen(),
       routes: {
-        '/': (context) => const AuthWrapper(),
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/home': (context) => const HomePage(),

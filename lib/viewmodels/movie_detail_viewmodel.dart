@@ -18,42 +18,55 @@ class MovieDetailViewModel with ChangeNotifier {
        _ratingViewModel = ratingViewModel,
        _movie = movie {
     _ratingViewModel.addListener(_onDataChanged);
+
+    Future.microtask(() {
+      loadReviews();
+    });
   }
 
   Movie get movie => _movie;
   User? get currentUser => _authViewModel.currentUser;
 
+  double get currentAverageRating {
+    return _ratingViewModel.getMovieAverageRating(_movie.id);
+  }
+
   Rating? get currentUserReview {
     if (currentUser != null) {
-      return _ratingViewModel.getUserReviewForMovie(
-        currentUser!.user_id,
-        _movie.movie_id,
-      );
+      return _ratingViewModel.getUserReviewForMovie(currentUser!.id, _movie.id);
     }
     return null;
   }
 
-  List<Rating> get allReviewsForMovie {
-    return _ratingViewModel.getReviewsForMovie(_movie.movie_id);
+  void loadReviews() {
+    _ratingViewModel.fetchReviewsForMovie(_movie.id);
   }
 
   Future<void> submitReview(double ratingValue, String? comment) async {
-    if (currentUser != null) {
+    if (currentUser == null) return;
+
+    try {
       await _ratingViewModel.submitReview(
-        user: currentUser!,
-        movieId: _movie.movie_id,
+        movieId: _movie.id,
         ratingValue: ratingValue,
-        comment: (comment != null && comment.isEmpty) ? null : comment,
+        comment: comment,
       );
+
+      notifyListeners();
+    } catch (e) {
+      rethrow;
     }
   }
 
   Future<void> deleteReview() async {
-    if (currentUser != null) {
-      await _ratingViewModel.deleteReview(
-        currentUser!.user_id,
-        _movie.movie_id,
-      );
+    if (currentUser == null) return;
+
+    try {
+      await _ratingViewModel.deleteReview(_movie.id);
+
+      notifyListeners();
+    } catch (e) {
+      rethrow;
     }
   }
 

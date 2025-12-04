@@ -1,4 +1,3 @@
-// lib/viewmodels/home_viewmodel.dart
 import 'package:flutter/material.dart';
 import 'package:projetomobile/models/movie.dart';
 import 'package:projetomobile/viewmodels/movie_viewmodel.dart';
@@ -25,14 +24,12 @@ class HomeViewModel with ChangeNotifier {
   }
 
   void _onRatingsChanged() {
-    _applyFilters();
+    _loadMovies();
   }
 
   void _loadMovies() {
     _allMovies = _movieViewModel.movies.map((movie) {
-      movie.averageRating = _ratingViewModel.getMovieAverageRating(
-        movie.movie_id,
-      );
+      movie.averageRating = _ratingViewModel.getMovieAverageRating(movie.id);
       return movie;
     }).toList();
     _applyFilters();
@@ -66,9 +63,7 @@ class HomeViewModel with ChangeNotifier {
     }
 
     tempMovies = tempMovies.map((movie) {
-      movie.averageRating = _ratingViewModel.getMovieAverageRating(
-        movie.movie_id,
-      );
+      movie.averageRating = _ratingViewModel.getMovieAverageRating(movie.id);
       return movie;
     }).toList();
 

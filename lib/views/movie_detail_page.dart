@@ -7,6 +7,8 @@ import 'package:projetomobile/utils/app_colors.dart';
 import 'package:projetomobile/viewmodels/auth_viewmodel.dart';
 import 'package:projetomobile/viewmodels/rating_viewmodel.dart';
 import 'package:projetomobile/viewmodels/movie_detail_viewmodel.dart';
+import 'package:projetomobile/services/api_service.dart';
+import 'package:projetomobile/widgets/user_avatar.dart';
 
 class MovieDetailPage extends StatefulWidget {
   final Movie movie;
@@ -22,6 +24,13 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
   double _currentRating = 0.0;
   bool _isEditing = false;
 
+  // Sua função de imagem (mantida)
+  String getFullImageUrl(String path) {
+    if (path.startsWith('http')) return path;
+    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    return '${ApiService.baseUrl}/$cleanPath';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -31,6 +40,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
       movie: widget.movie,
     );
 
+    // Sincroniza estado inicial se já houver review carregada na memória
     final userReview = _viewModel.currentUserReview;
     if (userReview != null) {
       _isEditing = false;
@@ -48,21 +58,46 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
     super.dispose();
   }
 
-  void _onSubmitReview() {
-    _viewModel.submitReview(_currentRating, _commentController.text);
+  // --- CORREÇÃO 1: Adicionado async e await ---
+  Future<void> _onSubmitReview() async {
+    if (_currentRating == 0.0) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Selecione uma nota.')));
+      return;
+    }
+
     FocusScope.of(context).unfocus();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Avaliação salva!'),
-        backgroundColor: AppColors.success,
-      ),
-    );
-    setState(() {
-      _isEditing = false;
-    });
+
+    try {
+      // O Segredo: Esperamos a API responder e a lista atualizar
+      await _viewModel.submitReview(_currentRating, _commentController.text);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Avaliação salva!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+
+      // Só agora mudamos a UI para esconder o formulário
+      setState(() {
+        _isEditing = false;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao salvar: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
-  void _onDeleteReview() async {
+  // --- CORREÇÃO 2: Adicionado await no delete ---
+  Future<void> _onDeleteReview() async {
     final confirmed = await _showConfirmationDialog(
       'Deletar Avaliação?',
       'Sua avaliação e comentário serão removidos.',
@@ -70,18 +105,32 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
 
     if (!confirmed) return;
 
-    _viewModel.deleteReview();
-    setState(() {
-      _currentRating = 0.0;
-      _commentController.clear();
-      _isEditing = true;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Avaliação removida.'),
-        backgroundColor: AppColors.error,
-      ),
-    );
+    try {
+      // Esperamos a API deletar e a lista atualizar
+      await _viewModel.deleteReview();
+
+      if (!mounted) return;
+
+      setState(() {
+        _currentRating = 0.0;
+        _commentController.clear();
+        _isEditing = true; // Volta a mostrar o formulário limpo
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Avaliação removida.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao deletar: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   Future<bool> _showConfirmationDialog(String title, String content) async {
@@ -89,8 +138,8 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.lightBackground,
-        title: Text(title),
-        content: Text(content),
+        title: Text(title, style: const TextStyle(color: Colors.white)),
+        content: Text(content, style: const TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -112,24 +161,22 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
     return ChangeNotifierProvider.value(
       value: _viewModel,
       child: Scaffold(
+        backgroundColor: AppColors.darkBackground,
         appBar: AppBar(
           title: Text(widget.movie.title),
           backgroundColor: Colors.transparent,
           elevation: 0,
         ),
         extendBodyBehindAppBar: true,
-        // ADICIONADO: RefreshIndicator
         body: RefreshIndicator(
           color: AppColors.netflixRed,
           onRefresh: () async {
-            // Chama o método de refresh específico para esta tela
             await Provider.of<RatingViewModel>(
               context,
               listen: false,
-            ).refreshReviewsForMovie(widget.movie.movie_id);
+            ).fetchReviewsForMovie(widget.movie.id);
           },
           child: SingleChildScrollView(
-            // ESSENCIAL: Permite rolar mesmo se o conteúdo for pequeno
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,6 +192,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                         style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -157,29 +205,38 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Média da comunidade
-                      Row(
-                        children: [
-                          const Icon(Icons.star, color: Colors.amber, size: 22),
-                          const SizedBox(width: 8),
-                          Text(
-                            widget.movie.averageRating > 0
-                                ? widget.movie.averageRating.toStringAsFixed(1)
-                                : 'Sem avaliações',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[300],
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            ' (Média da comunidade)',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[500],
-                            ),
-                          ),
-                        ],
+                      Consumer<MovieDetailViewModel>(
+                        builder: (context, viewModel, child) {
+                          final average = viewModel.currentAverageRating;
+                          return Row(
+                            children: [
+                              const Icon(
+                                Icons.star,
+                                color: Colors.amber,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                average > 0
+                                    ? average.toStringAsFixed(1)
+                                    : 'Sem avaliações',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[300],
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              if (average > 0)
+                                Text(
+                                  ' (Média da comunidade)',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 24),
                       const Text(
@@ -187,6 +244,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -204,15 +262,15 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                       const Divider(color: AppColors.darkGray),
                       const SizedBox(height: 16),
                       const Text(
-                        'Avaliações',
+                        'Avaliações da Comunidade',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 16),
                       _buildReviewsList(),
-                      // Espaço extra no final para não cortar o último item
                       SizedBox(
                         height: MediaQuery.of(context).padding.bottom + 16,
                       ),
@@ -233,13 +291,13 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
         return LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Colors.black.withValues(alpha: 0.6), Colors.transparent],
+          colors: [Colors.black.withOpacity(0.6), Colors.transparent],
           stops: const [0.0, 0.9],
         ).createShader(Rect.fromLTRB(0, 0, rect.width, rect.height));
       },
       blendMode: BlendMode.dstIn,
       child: Image.network(
-        widget.movie.imageUrl,
+        getFullImageUrl(widget.movie.imageUrl),
         width: double.infinity,
         height: 600,
         fit: BoxFit.cover,
@@ -288,56 +346,65 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
       children: [
         const Text(
           'Sua Avaliação',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(height: 12),
         Card(
-          color: AppColors.lightBackground.withValues(alpha: .5),
-          clipBehavior: Clip.antiAlias,
-          margin: const EdgeInsets.only(bottom: 12),
-          child: InkWell(
-            onTap: () {
-              setState(() {
-                _isEditing = true;
-              });
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                UserAvatar.fromUrl(url: review.userPhotoUrl, radius: 18),
+
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const CircleAvatar(
-                        radius: 20,
-                        backgroundColor: AppColors.darkGray,
-                        child: Icon(Icons.person, color: AppColors.lightGray),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Você",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                          // Botão de Lápis para editar
+                          IconButton(
+                            icon: const Icon(
+                              Icons.edit,
+                              color: AppColors.lightGray,
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _isEditing = true;
+                                _currentRating = review.value;
+                                _commentController.text = review.comment ?? '';
+                              });
+                            },
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              review.userName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            Text(
-                              DateFormat(
-                                'dd \'de\' MMM, yyyy',
-                                'pt_BR',
-                              ).format(review.timestamp.toDate()),
-                              style: const TextStyle(
-                                color: AppColors.lightGray,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
+                      Text(
+                        DateFormat(
+                          'dd \'de\' MMM, yyyy',
+                          'pt_BR',
+                        ).format(review.timestamp),
+                        style: const TextStyle(
+                          color: AppColors.lightGray,
+                          fontSize: 12,
                         ),
                       ),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           Text(
@@ -352,24 +419,22 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                           const Icon(Icons.star, color: Colors.amber, size: 20),
                         ],
                       ),
-                      const SizedBox(width: 16),
-                      const Icon(
-                        Icons.edit,
-                        color: AppColors.lightGray,
-                        size: 20,
-                      ),
+                      if (review.comment != null && review.comment!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            review.comment!,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              height: 1.4,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
-                  if (review.comment != null && review.comment!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12.0),
-                      child: Text(
-                        review.comment!,
-                        style: const TextStyle(fontSize: 14, height: 1.4),
-                      ),
-                    ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -383,7 +448,11 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
       children: [
         const Text(
           'Deixe sua avaliação',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(height: 8),
         Row(
@@ -398,26 +467,26 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                     : Colors.grey[400],
                 size: 35,
               ),
-              onPressed: () {
-                setState(() {
-                  if (_currentRating == ratingValue) {
-                    _currentRating = 0.0;
-                  } else {
-                    _currentRating = ratingValue;
-                  }
-                });
-              },
+              onPressed: () => setState(() => _currentRating = ratingValue),
             );
           }),
         ),
-
         if (_currentRating > 0) ...[
           const SizedBox(height: 16),
           TextField(
             controller: _commentController,
+            style: const TextStyle(color: Colors.white),
             decoration: const InputDecoration(
               labelText: 'Adicionar um comentário (opcional)',
               hintText: 'O que você achou do filme?',
+              labelStyle: TextStyle(color: Colors.grey),
+              hintStyle: TextStyle(color: Colors.grey),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: AppColors.netflixRed),
+              ),
             ),
             maxLines: 3,
           ),
@@ -425,11 +494,16 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
           Row(
             children: [
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.netflixRed,
+                  foregroundColor: Colors.white,
+                ),
                 onPressed: _onSubmitReview,
                 child: const Text('Salvar'),
               ),
               const SizedBox(width: 8),
-              if (_viewModel.currentUserReview != null)
+              // Botões condicionais se já existe review no banco (estamos editando)
+              if (_viewModel.currentUserReview != null) ...[
                 TextButton.icon(
                   icon: const Icon(
                     Icons.delete_outline,
@@ -440,22 +514,20 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                   onPressed: _onDeleteReview,
                   label: const Text('Deletar'),
                 ),
-              const Spacer(),
-              if (_viewModel.currentUserReview != null)
+                const Spacer(),
                 TextButton(
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.lightGray,
                   ),
                   onPressed: () {
-                    final userReview = _viewModel.currentUserReview!;
+                    // Cancela edição
                     setState(() {
-                      _currentRating = userReview.value;
-                      _commentController.text = userReview.comment ?? '';
                       _isEditing = false;
                     });
                   },
                   child: const Text('Cancelar'),
                 ),
+              ],
             ],
           ),
         ],
@@ -471,22 +543,27 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
           listen: false,
         );
         final reviews = ratingViewModel.getReviewsForMovie(
-          movieDetailViewModel.movie.movie_id,
+          movieDetailViewModel.movie.id,
         );
+        final currentUserId = movieDetailViewModel.currentUser?.id;
 
-        if (ratingViewModel.isLoading && reviews.isEmpty) {
+        final otherReviews = reviews.where((r) {
+          return r.userId.toString() != currentUserId?.toString();
+        }).toList();
+
+        if (ratingViewModel.isLoading && otherReviews.isEmpty) {
           return const Padding(
             padding: EdgeInsets.all(16.0),
             child: Center(child: CircularProgressIndicator()),
           );
         }
 
-        if (reviews.isEmpty) {
+        if (otherReviews.isEmpty) {
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(16.0),
               child: Text(
-                'Este filme ainda não tem avaliações.',
+                'Nenhuma outra avaliação ainda.',
                 style: TextStyle(color: Colors.grey),
               ),
             ),
@@ -495,27 +572,26 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
 
         return ListView.builder(
           padding: EdgeInsets.zero,
-          itemCount: reviews.length,
+          itemCount: otherReviews.length,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemBuilder: (context, index) {
-            final review = reviews[index];
-            return _buildReviewCard(review);
-          },
+          itemBuilder: (context, index) =>
+              _buildReviewCard(otherReviews[index]),
         );
       },
     );
   }
 
   Widget _buildReviewCard(Rating review) {
-    if (!_isEditing && review.userId == _viewModel.currentUser?.user_id) {
+    if (!_isEditing &&
+        review.userId.toString() == _viewModel.currentUser?.id.toString()) {
       return const SizedBox.shrink();
     }
 
     final formattedDate = DateFormat(
       'dd \'de\' MMM, yyyy',
       'pt_BR',
-    ).format(review.timestamp.toDate());
+    ).format(review.timestamp);
 
     return Card(
       color: AppColors.lightBackground,
@@ -527,12 +603,10 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
           children: [
             Row(
               children: [
-                const CircleAvatar(
-                  radius: 20,
-                  backgroundColor: AppColors.darkGray,
-                  child: Icon(Icons.person, color: AppColors.lightGray),
-                ),
+                UserAvatar.fromUrl(url: review.userPhotoUrl, radius: 18),
+
                 const SizedBox(width: 12),
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -542,6 +616,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
+                          color: Colors.white,
                         ),
                       ),
                       Text(
@@ -554,6 +629,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                     ],
                   ),
                 ),
+
                 Row(
                   children: [
                     Text(
@@ -565,17 +641,22 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.star, color: Colors.amber, size: 20),
+                    const Icon(Icons.star, color: Colors.amber, size: 18),
                   ],
                 ),
               ],
             ),
+
             if (review.comment != null && review.comment!.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.only(top: 12.0),
+                padding: const EdgeInsets.only(top: 10.0),
                 child: Text(
                   review.comment!,
-                  style: const TextStyle(fontSize: 14, height: 1.4),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.3,
+                    color: Colors.white,
+                  ),
                 ),
               ),
           ],

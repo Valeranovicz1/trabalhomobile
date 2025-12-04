@@ -1,11 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class Rating {
   final String userId;
   final int movieId;
   final double value;
   final String? comment;
-  final Timestamp timestamp;
+  final DateTime timestamp;
   final String userName;
   final String? userPhotoUrl;
 
@@ -25,21 +23,23 @@ class Rating {
       'movieId': movieId,
       'value': value,
       'comment': comment,
-      'timestamp': timestamp,
+      'timestamp': timestamp.toIso8601String(),
       'userName': userName,
       'userPhotoUrl': userPhotoUrl,
     };
   }
 
-  factory Rating.fromFirestore(Map<String, dynamic> data) {
+  factory Rating.fromJson(Map<String, dynamic> json) {
     return Rating(
-      userId: data['userId'] as String? ?? '',
-      movieId: data['movieId'] as int? ?? 0,
-      value: (data['value'] as num? ?? 0.0).toDouble(),
-      comment: data['comment'] as String?,
-      timestamp: data['timestamp'] as Timestamp? ?? Timestamp.now(),
-      userName: data['userName'] as String? ?? 'Usuário Anônimo',
-      userPhotoUrl: data['userPhotoUrl'] as String?,
+      userId: json['user_id']?.toString() ?? '',
+      movieId: json['movie_id'] ?? 0,
+      value: (json['value'] as num?)?.toDouble() ?? 0.0,
+      comment: json['comment'],
+      timestamp: json['timestamp'] != null
+          ? DateTime.parse(json['timestamp'])
+          : DateTime.now(),
+      userName: json['userName'] ?? json['user_name'] ?? 'Anônimo',
+      userPhotoUrl: json['userPhotoUrl'] ?? json['user_photo_url'],
     );
   }
 }
