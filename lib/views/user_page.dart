@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:projetomobile/viewmodels/auth_viewmodel.dart';
 import 'package:projetomobile/utils/app_colors.dart';
+import 'package:projetomobile/services/api_service.dart';
 
 class UserPage extends StatelessWidget {
   const UserPage({super.key});
@@ -9,28 +12,34 @@ class UserPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Meu Perfil')),
+      backgroundColor: AppColors.darkBackground,
+      appBar: AppBar(
+        title: const Text('Meu Perfil'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
       body: Consumer<AuthViewModel>(
         builder: (context, viewModel, child) {
           if (viewModel.currentUser == null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               Navigator.of(
                 context,
-              ).pushNamedAndRemoveUntil('/', (route) => false);
+              ).pushNamedAndRemoveUntil('/login', (route) => false);
             });
             return const Center(child: CircularProgressIndicator());
           }
 
           return Stack(
             children: [
-              _UserProfileContent(
-                key: ValueKey(viewModel.currentUser!.user_id),
-              ),
-
+              _UserProfileContent(key: ValueKey(viewModel.currentUser!.id)),
               if (viewModel.isLoading)
                 Container(
                   color: Colors.black.withOpacity(0.5),
-                  child: const Center(child: CircularProgressIndicator()),
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.netflixRed,
+                    ),
+                  ),
                 ),
             ],
           );
@@ -53,12 +62,13 @@ class _UserProfileContentState extends State<_UserProfileContent> {
   late TextEditingController _passwordController;
   late TextEditingController _confirmPasswordController;
 
+  final ImagePicker _picker = ImagePicker();
+
   @override
   void initState() {
     super.initState();
     final user = Provider.of<AuthViewModel>(context, listen: false).currentUser;
     _nameController = TextEditingController(text: user?.name ?? '');
-
     _passwordController = TextEditingController();
     _confirmPasswordController = TextEditingController();
   }
@@ -71,37 +81,119 @@ class _UserProfileContentState extends State<_UserProfileContent> {
     super.dispose();
   }
 
-  Future<bool> _showConfirmationDialog(String title, String content) async {
-    final result = await showDialog<bool>(
+  void _showImagePickerOptions() {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.lightBackground,
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+      backgroundColor: AppColors.lightBackground,
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.white),
+                title: const Text(
+                  'Galeria',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.white),
+                title: const Text(
+                  'Câmera',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.netflixRed),
-            child: const Text('Confirmar'),
-          ),
-        ],
-      ),
+        );
+      },
     );
-    return result ?? false;
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        imageQuality: 80,
+      );
+
+      if (pickedFile != null) {
+        final File imageFile = File(pickedFile.path);
+
+        if (!mounted) return;
+        final authViewModel = Provider.of<AuthViewModel>(
+          context,
+          listen: false,
+        );
+
+        final success = await authViewModel.updateProfilePhoto(imageFile);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                success ? 'Foto atualizada!' : 'Erro ao enviar foto.',
+              ),
+              backgroundColor: success ? AppColors.success : AppColors.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {}
+  }
+
+  String getFullImageUrl(String path) {
+    if (path.isEmpty) return '';
+    if (path.startsWith('http')) {
+      if (path.contains('localhost') || path.contains('127.0.0.1')) {
+        return path
+            .replaceAll('localhost', '10.0.2.2')
+            .replaceAll('127.0.0.1', '10.0.2.2');
+      }
+      return path;
+    }
+    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    return '${ApiService.baseUrl}/$cleanPath';
+  }
+
+  Future<bool> _showConfirmationDialog(String title, String content) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: AppColors.lightBackground,
+            title: Text(title, style: const TextStyle(color: Colors.white)),
+            content: Text(
+              content,
+              style: const TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.netflixRed,
+                ),
+                child: const Text('Confirmar'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   void _onUpdateProfile() async {
     if (!_formKey.currentState!.validate()) return;
-
-    final confirmed = await _showConfirmationDialog(
-      'Atualizar Perfil?',
-      'Seus dados serão alterados.',
-    );
-    if (!confirmed) return;
 
     final viewModel = Provider.of<AuthViewModel>(context, listen: false);
     final success = await viewModel.updateUser(
@@ -112,171 +204,195 @@ class _UserProfileContentState extends State<_UserProfileContent> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            success
-                ? 'Perfil atualizado com sucesso!'
-                : 'Falha ao atualizar. Pode ser necessário logar novamente.',
-          ),
+          content: Text(success ? 'Perfil atualizado!' : 'Erro ao atualizar.'),
           backgroundColor: success ? AppColors.success : AppColors.error,
         ),
       );
-      _passwordController.clear();
-      _confirmPasswordController.clear();
+      if (success) {
+        _passwordController.clear();
+        _confirmPasswordController.clear();
+      }
+    }
+  }
+
+  void _onLogout() async {
+    final confirmed = await _showConfirmationDialog(
+      'Sair?',
+      'Deseja sair do app?',
+    );
+    if (confirmed && mounted) {
+      await Provider.of<AuthViewModel>(context, listen: false).logout();
+      if (mounted)
+        Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
     }
   }
 
   void _onDeleteAccount() async {
     final confirmed = await _showConfirmationDialog(
       'Deletar Conta?',
-      'Esta ação é permanente e não pode ser desfeita.',
+      'Essa ação é irreversível.',
     );
-    if (!confirmed) return;
-
-    final viewModel = Provider.of<AuthViewModel>(context, listen: false);
-    await viewModel.deleteAccount();
-  }
-
-  void _onLogout() async {
-    final confirmed = await _showConfirmationDialog(
-      'Sair da Conta?',
-      'Você será desconectado.',
-    );
-    if (!confirmed) return;
-
-    final viewModel = Provider.of<AuthViewModel>(context, listen: false);
-    await viewModel.logout();
+    if (confirmed && mounted) {
+      await Provider.of<AuthViewModel>(context, listen: false).deleteAccount();
+      if (mounted)
+        Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = Provider.of<AuthViewModel>(
-      context,
-      listen: false,
-    ).currentUser!;
+    return Consumer<AuthViewModel>(
+      builder: (context, viewModel, child) {
+        final user = viewModel.currentUser!;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: AppColors.darkGray,
-                    child: const Icon(
-                      Icons.person,
-                      size: 50,
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 60,
+                        backgroundColor: AppColors.darkGray,
+                        backgroundImage: user.imageUrl != null
+                            ? NetworkImage(getFullImageUrl(user.imageUrl!))
+                            : null,
+                        child: user.imageUrl == null
+                            ? const Icon(
+                                Icons.person,
+                                size: 60,
+                                color: AppColors.lightGray,
+                              )
+                            : null,
+                      ),
+
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: CircleAvatar(
+                          radius: 20,
+                          backgroundColor: AppColors.netflixRed,
+                          child: IconButton(
+                            iconSize: 20,
+                            icon: const Icon(
+                              Icons.camera_alt,
+                              color: AppColors.white,
+                            ),
+                            onPressed: _showImagePickerOptions,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    user.email,
+                    style: const TextStyle(
+                      fontSize: 16,
                       color: AppColors.lightGray,
                     ),
                   ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppColors.netflixRed,
-                      child: IconButton(
-                        iconSize: 20,
-                        icon: const Icon(
-                          Icons.camera_alt,
-                          color: AppColors.white,
-                        ),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Upload de foto em breve!'),
-                            ),
-                          );
-                        },
-                      ),
+                ),
+                const SizedBox(height: 32),
+
+                TextFormField(
+                  controller: _nameController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Nome',
+                    labelStyle: TextStyle(color: Colors.grey),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: AppColors.netflixRed),
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: Text(
-                user.email,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: AppColors.lightGray,
+                  validator: (val) =>
+                      val!.trim().isEmpty ? 'Nome inválido' : null,
                 ),
-              ),
-            ),
-            const SizedBox(height: 32),
+                const SizedBox(height: 20),
 
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Nome'),
-              validator: (value) => (value == null || value.trim().isEmpty)
-                  ? 'Nome não pode ficar em branco'
-                  : null,
-            ),
-            const SizedBox(height: 20),
-            TextFormField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Nova Senha (deixe em branco para manter)',
-              ),
-              validator: (value) {
-                if (value != null && value.isNotEmpty && value.length < 6) {
-                  return 'A senha deve ter pelo menos 6 caracteres';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 20),
-            TextFormField(
-              controller: _confirmPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Confirmar Nova Senha',
-              ),
-              validator: (value) {
-                if (value != _passwordController.text) {
-                  return 'As senhas não coincidem';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: _onUpdateProfile,
-              child: const Text('Atualizar Perfil'),
-            ),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Nova Senha (opcional)',
+                    labelStyle: TextStyle(color: Colors.grey),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: AppColors.netflixRed),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
 
-            const SizedBox(height: 40),
-            const Divider(color: AppColors.darkGray),
-            const SizedBox(height: 20),
+                TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: true,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Confirmar Senha',
+                    labelStyle: TextStyle(color: Colors.grey),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: AppColors.netflixRed),
+                    ),
+                  ),
+                  validator: (val) => val != _passwordController.text
+                      ? 'Senhas não conferem'
+                      : null,
+                ),
 
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.darkGray,
-                foregroundColor: AppColors.white,
-              ),
-              onPressed: _onLogout,
-              child: const Text('Sair (Logout)'),
+                const SizedBox(height: 32),
+
+                ElevatedButton(
+                  onPressed: _onUpdateProfile,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.netflixRed,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: const Text('Atualizar Dados'),
+                ),
+
+                const SizedBox(height: 40),
+                const Divider(color: AppColors.darkGray),
+                const SizedBox(height: 20),
+
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.darkGray,
+                    foregroundColor: AppColors.white,
+                  ),
+                  onPressed: _onLogout,
+                  child: const Text('Sair (Logout)'),
+                ),
+                const SizedBox(height: 16),
+
+                TextButton(
+                  onPressed: _onDeleteAccount,
+                  child: const Text(
+                    'Deletar Conta',
+                    style: TextStyle(color: AppColors.error),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                foregroundColor: AppColors.error,
-                elevation: 0,
-                side: const BorderSide(color: AppColors.error, width: 1),
-              ),
-              onPressed: _onDeleteAccount,
-              child: const Text('Deletar Conta'),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

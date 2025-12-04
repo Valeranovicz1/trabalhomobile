@@ -1,74 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:projetomobile/models/rating.dart';
-import 'package:projetomobile/models/user.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:projetomobile/services/api_service.dart';
 
 class RatingViewModel with ChangeNotifier {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final Map<String, Map<int, Rating>> _userRatingsCache = {};
+  final ApiService _api = ApiService();
+
   final Map<int, List<Rating>> _movieReviewsCache = {};
   final Map<int, double> _movieAverageRatings = {};
-  bool _isLoading = true;
 
+  bool _isLoading = false;
   bool get isLoading => _isLoading;
-  bool _isRefreshingReviews = false;
-  bool get isRefreshingReviews => _isRefreshingReviews;
 
-  RatingViewModel() {
-    _initRatingsCache();
-  }
-
-  Future<void> _initRatingsCache() async {
-    try {
-      final snapshot = await _db
-          .collection('ratings')
-          .orderBy('timestamp', descending: true)
-          .get();
-      for (var doc in snapshot.docs) {
-        final rating = Rating.fromFirestore(doc.data());
-        if (!_userRatingsCache.containsKey(rating.userId)) {
-          _userRatingsCache[rating.userId] = {};
-        }
-        _userRatingsCache[rating.userId]![rating.movieId] = rating;
-        if (!_movieReviewsCache.containsKey(rating.movieId)) {
-          _movieReviewsCache[rating.movieId] = [];
-        }
-        _movieReviewsCache[rating.movieId]!.add(rating);
-      }
-      _recalculateAllAverages();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> refreshReviewsForMovie(int movieId) async {
-    _isRefreshingReviews = true;
-    notifyListeners();
-
-    try {
-      final snapshot = await _db
-          .collection('ratings')
-          .where('movieId', isEqualTo: movieId)
-          .orderBy('timestamp', descending: true)
-          .get();
-      _movieReviewsCache[movieId] = [];
-
-      for (var doc in snapshot.docs) {
-        final rating = Rating.fromFirestore(doc.data());
-        _movieReviewsCache[movieId]!.add(rating);
-
-        if (!_userRatingsCache.containsKey(rating.userId)) {
-          _userRatingsCache[rating.userId] = {};
-        }
-        _userRatingsCache[rating.userId]![rating.movieId] = rating;
-      }
-
-      _recalculateAverage(movieId);
-    } finally {
-      _isRefreshingReviews = false;
-      notifyListeners();
-    }
+  List<Rating> getReviewsForMovie(int movieId) {
+    return _movieReviewsCache[movieId] ?? [];
   }
 
   double getMovieAverageRating(int movieId) {
@@ -76,61 +20,94 @@ class RatingViewModel with ChangeNotifier {
   }
 
   Rating? getUserReviewForMovie(String userId, int movieId) {
-    return _userRatingsCache[userId]?[movieId];
+    final reviews = _movieReviewsCache[movieId];
+    if (reviews == null) return null;
+    try {
+      return reviews.firstWhere(
+        (r) => r.userId.toString() == userId.toString(),
+      );
+    } catch (e) {
+      return null;
+    }
   }
 
-  List<Rating> getReviewsForMovie(int movieId) {
-    return _movieReviewsCache[movieId] ?? [];
+  Future<void> fetchReviewsForMovie(int movieId) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final ratings = await _api.getRatings(movieId);
+
+      _movieReviewsCache[movieId] = ratings;
+
+      _recalculateAverage(movieId);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchRatingsForMovieList(List<dynamic> movies) async {
+    for (var movie in movies) {
+      try {
+        int movieId = movie.id;
+
+        final ratings = await _api.getRatings(movieId);
+        _movieReviewsCache[movieId] = ratings;
+
+        if (ratings.isNotEmpty) {
+          final sum = ratings.map((r) => r.value).reduce((a, b) => a + b);
+          final average = sum / ratings.length;
+          _movieAverageRatings[movieId] = double.parse(
+            average.toStringAsFixed(1),
+          );
+        } else {
+          _movieAverageRatings[movieId] = 0.0;
+        }
+      } catch (e) {}
+    }
+
+    notifyListeners();
   }
 
   Future<void> submitReview({
-    required User user,
     required int movieId,
     required double ratingValue,
     String? comment,
   }) async {
-    final docId = "${user.user_id}_$movieId";
-    final docRef = _db.collection('ratings').doc(docId);
-
-    double finalRatingValue = ratingValue;
-    if (finalRatingValue == 0.0) {
-      finalRatingValue =
-          getUserReviewForMovie(user.user_id, movieId)?.value ?? 0.0;
-      if (finalRatingValue == 0.0) return;
-    }
-
-    final newReview = Rating(
-      userId: user.user_id,
-      movieId: movieId,
-      value: finalRatingValue,
-      comment: (comment != null && comment.isEmpty) ? null : comment,
-      timestamp: Timestamp.now(),
-      userName: user.name,
-      userPhotoUrl: null,
-    );
-    await docRef.set(newReview.toJson());
-
-    if (!_userRatingsCache.containsKey(user.user_id)) {
-      _userRatingsCache[user.user_id] = {};
-    }
-    _userRatingsCache[user.user_id]![movieId] = newReview;
-    if (!_movieReviewsCache.containsKey(movieId)) {
-      _movieReviewsCache[movieId] = [];
-    }
-    _movieReviewsCache[movieId]!.removeWhere((r) => r.userId == user.user_id);
-    _movieReviewsCache[movieId]!.insert(0, newReview);
-
-    _recalculateAverage(movieId);
+    _isLoading = true;
     notifyListeners();
+
+    try {
+      await _api.submitRating(
+        movieId: movieId,
+        value: ratingValue,
+        comment: comment,
+      );
+
+      await fetchReviewsForMovie(movieId);
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
-  Future<void> deleteReview(String userId, int movieId) async {
-    final docId = "${userId}_$movieId";
-    await _db.collection('ratings').doc(docId).delete();
-    _userRatingsCache[userId]?.remove(movieId);
-    _movieReviewsCache[movieId]?.removeWhere((r) => r.userId == userId);
-    _recalculateAverage(movieId);
+  Future<void> deleteReview(int movieId) async {
+    _isLoading = true;
     notifyListeners();
+
+    try {
+      await _api.deleteRating(movieId);
+
+      await fetchReviewsForMovie(movieId);
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   void _recalculateAverage(int movieId) {
@@ -144,10 +121,25 @@ class RatingViewModel with ChangeNotifier {
     }
   }
 
-  void _recalculateAllAverages() {
-    final allMovieIds = _movieReviewsCache.keys;
-    for (var movieId in allMovieIds) {
-      _recalculateAverage(movieId);
+  Future<void> updateReview({
+    required int movieId,
+    required double ratingValue,
+    String? comment,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      // Chama o PUT na API
+      await _api.put('/ratings/$movieId', {
+        'value': ratingValue,
+        'comment': comment,
+      });
+      await fetchReviewsForMovie(movieId);
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 }

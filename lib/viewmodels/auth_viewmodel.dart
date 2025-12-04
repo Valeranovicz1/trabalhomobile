@@ -1,171 +1,193 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:projetomobile/models/user.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart' as fba;
+import 'package:projetomobile/services/api_service.dart';
+import 'dart:io';
 
 class AuthViewModel with ChangeNotifier {
-  final fba.FirebaseAuth _auth = fba.FirebaseAuth.instance;
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-
+  final ApiService _api = ApiService();
   User? _currentUser;
   bool _isLoading = false;
-  late StreamSubscription<fba.User?> _authStateSubscription;
 
   User? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
   bool get isLoading => _isLoading;
+  String? _token;
+  String? get token => _token;
 
   AuthViewModel() {
-    _authStateSubscription = fba.FirebaseAuth.instance
-        .authStateChanges()
-        .listen(_onAuthStateChanged);
+    _tryAutoLogin();
   }
 
-  void _onAuthStateChanged(fba.User? firebaseUser) async {
-    if (firebaseUser == null) {
-      _currentUser = null;
-    } else {
-      final doc = await _db.collection('users').doc(firebaseUser.uid).get();
+  Future<bool> _tryAutoLogin() async {
+    await _api.loadToken();
 
-      if (doc.exists) {
-        final data = doc.data()!;
-        _currentUser = User(
-          user_id: firebaseUser.uid,
-          name: data['name'],
-          email: firebaseUser.email!,
-          password: '',
-        );
-      } else {
-        _currentUser = User(
-          user_id: firebaseUser.uid,
-          name: firebaseUser.displayName ?? "Usuário",
-          email: firebaseUser.email!,
-          password: '',
-        );
-      }
+    bool isValid = await _api.validateToken();
+    if (!isValid) {
+      await _api.clearToken();
+      return false;
     }
-    notifyListeners();
-  }
 
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
-  }
-
-  Future<bool> login(String email, String password) async {
-    _setLoading(true);
     try {
-      await fba.FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password,
+      final userData = await _api.get('/users/me');
+
+      _currentUser = User(
+        id: userData['id'].toString(),
+        name: userData['name'],
+        email: userData['email'],
+        imageUrl: userData['imageUri'],
+        token: null,
       );
-      _setLoading(false);
+
+      notifyListeners();
       return true;
     } catch (e) {
-      _setLoading(false);
       return false;
     }
   }
 
-  Future<bool> register(String name, String email, String password) async {
-    _setLoading(true);
-    try {
-      final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+  Future<bool> login(String email, String password) async {
+    _isLoading = true;
+    notifyListeners();
 
-      final fbaUser = userCredential.user;
-      if (fbaUser == null) {
-        _setLoading(false);
+    try {
+      bool loginSuccess = await _api.login(email, password);
+
+      if (!loginSuccess) {
+        _isLoading = false;
+        notifyListeners();
         return false;
       }
 
-      await fbaUser.updateDisplayName(name);
+      final userData = await _api.get('/users/me');
 
-      final userModel = User(
-        user_id: fbaUser.uid,
-        name: name,
-        email: email,
-        password: '',
+      _currentUser = User(
+        id: userData['id'].toString(),
+        name: userData['name'],
+        email: userData['email'],
+        imageUrl: userData['imageUri'],
+        token: null,
       );
 
-      await _db.collection('users').doc(fbaUser.uid).set({
-        'name': name,
-        'email': email,
-        'joined': FieldValue.serverTimestamp(),
-      });
-
-      _currentUser = userModel;
-
-      _setLoading(false);
+      _isLoading = false;
+      notifyListeners();
       return true;
     } catch (e) {
-      _setLoading(false);
+      _isLoading = false;
+      notifyListeners();
       return false;
     }
   }
 
   Future<void> logout() async {
-    await fba.FirebaseAuth.instance.signOut();
+    await _api.clearToken();
+    _currentUser = null;
+    notifyListeners();
+  }
+
+  Future<bool> register(String name, String email, String password) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _api.post('/register', {
+        'name': name,
+        'email': email,
+        'password': password,
+      });
+      final success = await login(email, password);
+      _isLoading = false;
+      return success;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 
   Future<bool> updateUser({
     required String newName,
     required String newPassword,
   }) async {
-    _setLoading(true);
-    final fbaUser = _auth.currentUser;
-    if (fbaUser == null) {
-      _setLoading(false);
-      return false;
-    }
+    _isLoading = true;
+    notifyListeners();
 
     try {
-      if (newName != _currentUser?.name) {
-        await fbaUser.updateDisplayName(newName);
+      final Map<String, dynamic> body = {};
+      if (newName.isNotEmpty) body['name'] = newName;
+      if (newPassword.isNotEmpty) body['password'] = newPassword;
+
+      if (body.isEmpty) {
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+      await _api.put('/users/me', body);
+
+      if (_currentUser != null) {
+        _currentUser = User(
+          id: _currentUser!.id,
+          name: newName.isNotEmpty ? newName : _currentUser!.name,
+          email: _currentUser!.email,
+          token: _currentUser!.token,
+        );
       }
 
-      await _db.collection('users').doc(fbaUser.uid).update({'name': newName});
-
-      if (newPassword.isNotEmpty) {
-        await fbaUser.updatePassword(newPassword);
-      }
-
-      _currentUser = User(
-        user_id: fbaUser.uid,
-        name: newName,
-        email: fbaUser.email!,
-        password: '',
-      );
-
+      _isLoading = false;
       notifyListeners();
-      _setLoading(false);
       return true;
     } catch (e) {
-      _setLoading(false);
+      _isLoading = false;
+      notifyListeners();
       return false;
     }
   }
 
   Future<bool> deleteAccount() async {
-    _setLoading(true);
+    _isLoading = true;
+    notifyListeners();
+
     try {
-      final fbaUser = _auth.currentUser;
-      if (fbaUser == null) {
-        _setLoading(false);
-        return false;
-      }
+      await _api.delete('/users/me');
 
-      await _db.collection('users').doc(fbaUser.uid).delete();
+      await logout();
 
-      await fbaUser.delete();
-
-      _setLoading(false);
+      _isLoading = false;
+      notifyListeners();
       return true;
     } catch (e) {
-      _setLoading(false);
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateProfilePhoto(File imageFile) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await _api.uploadProfilePhoto(imageFile);
+
+      if (_currentUser != null) {
+        String newUrl = response['imageUri'] ?? response['image_url'];
+
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final urlWithCacheBust = "$newUrl?v=$timestamp";
+
+        _currentUser = User(
+          id: _currentUser!.id,
+          name: _currentUser!.name,
+          email: _currentUser!.email,
+          token: _currentUser!.token,
+          imageUrl: urlWithCacheBust,
+        );
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
       return false;
     }
   }

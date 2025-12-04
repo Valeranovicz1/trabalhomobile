@@ -49,7 +49,7 @@ class _RegisterPageState extends State<RegisterPage> {
         }
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Conta criada com sucesso! Por favor, faça o login.'),
+            content: Text('Conta criada com sucesso!'),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
           ),

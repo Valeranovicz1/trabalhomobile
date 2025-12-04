@@ -2,6 +2,8 @@
 
 Um catálogo pessoal de filmes desenvolvido em Flutter, inspirado no design da Netflix.
 
+Para acessar a API, acesse o link: https://github.com/maluquismos/projetomobile-api
+
 ## 📱 Sobre o Projeto
 
 O **MovieDex** é um aplicativo mobile desenvolvido como projeto de programação mobile, funcionando como uma espécie de Letterboxd pessoal. O projeto utiliza Flutter e segue as melhores práticas de desenvolvimento, com arquitetura MVVM e design system inspirado na Netflix.
