@@ -80,15 +80,6 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.darkBackground, Color(0xFF000000)],
-          ),
-        ),
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -100,10 +91,11 @@ class _LoginPageState extends State<LoginPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _buildHeader(),
-                      const SizedBox(height: 60),
+                      const SizedBox(height: 32),
                       _buildForm(isLoading),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 24),
                       _buildExtras(),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
@@ -119,13 +111,14 @@ class _LoginPageState extends State<LoginPage> {
     return Column(
       children: [
         SizedBox(
-          width: 300,
-          height: 300,
+          width: 250,
+          height: 250,
           child: Image.asset(
             'lib/icones_app/icon-main.png',
             fit: BoxFit.contain,
           ),
         ),
+
         const Text(
           'MovieDex',
           style: TextStyle(
@@ -139,6 +132,7 @@ class _LoginPageState extends State<LoginPage> {
         const Text(
           'Seu catálogo pessoal de filmes',
           style: TextStyle(color: AppColors.lightGray, fontSize: 16),
+          textAlign: TextAlign.center,
         ),
       ],
     );
@@ -316,9 +310,9 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ],
         ),
+
         const SizedBox(height: 40),
-        const SizedBox(height: 32),
-        const SizedBox(height: 32),
+
         Wrap(
           alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
