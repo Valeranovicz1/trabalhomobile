@@ -1,8 +1,7 @@
-// lib/views/login_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:projetomobile/viewmodels/auth_viewmodel.dart';
-import 'package:projetomobile/utils/app_colors.dart'; // Suas cores
+import 'package:projetomobile/utils/app_colors.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -37,7 +36,11 @@ class _LoginPageState extends State<LoginPage> {
       _passwordController.text,
     );
 
-    if (mounted && !success) {
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Email ou senha inválidos.'),
