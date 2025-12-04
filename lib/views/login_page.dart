@@ -118,20 +118,14 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildHeader() {
     return Column(
       children: [
-        Container(
-          width: 100,
-          height: 100,
-          decoration: const BoxDecoration(
-            color: AppColors.netflixRed,
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.movie_outlined,
-            color: AppColors.white,
-            size: 50,
+        SizedBox(
+          width: 300,
+          height: 300,
+          child: Image.asset(
+            'lib/icones_app/icon-main.png',
+            fit: BoxFit.contain,
           ),
         ),
-        const SizedBox(height: 24),
         const Text(
           'MovieDex',
           style: TextStyle(
